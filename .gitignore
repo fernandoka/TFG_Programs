@@ -1,1 +1,4 @@
-*.wav
+*.wa
+*.mid
+Midiespicification/*
+*.zip
