@@ -1,6 +1,0 @@
-https://www.csie.ntu.edu.tw/~r92092/ref/midi/
-
-https://www.midi.org/specifications/item/table-1-summary-of-midi-message
-
-
-https://www.midi.org/specifications-old/item/table-3-control-change-messages-data-bytes-2
