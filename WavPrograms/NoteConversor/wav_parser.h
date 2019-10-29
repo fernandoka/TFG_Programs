@@ -19,11 +19,6 @@
 #include <math.h>
 
 #include <stdbool.h>
-// Types
-//My stdbool
-#define TRUE 1
-#define FALSE 0
-typedef short int bool_t;
 
 typedef struct {
 	//int id_0; // "Riff"
@@ -42,6 +37,12 @@ typedef struct {
 }wav_header_t;
 
 
+//To Fix stuff
+#define QN 2 		// Integer part
+#define QM 22		// Decimal part
+#define FMUL(a,b,q) ( ((a)*(b))>>(q) )
+
+// Constant
 #define NUM_NOTES_PER_OCTAVE 12
 #define MAX_CHANNELS 20
 #endif

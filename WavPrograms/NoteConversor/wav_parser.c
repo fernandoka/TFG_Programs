@@ -9,6 +9,7 @@ static FILE *fd;
 static FILE *fd_out;	
 static wav_header_t file;
 static float step; // Num steps of distance between samples
+static bool verbose = false;
 
 /* Const variables */
 static const char *id_0Mark = "RIFF";
@@ -42,17 +43,22 @@ static const float notesFreqMiddle[NUM_NOTES_PER_OCTAVE*7+4] = {
 
 
 /* Prototipes */
+
+// Functions called by main 									 
 static bool setup(int argc, char const *argv[]);
 static void run_parser();
-static unsigned char getNextByte();
-static bool readHeader();
 
+// Functionality functions
+static bool readHeader();
+static bool writeOutFile(int headerBytesReaded);
+
+// Aux functions
 static bool checkCharacters(const char *ch);
 static unsigned int get4BytesNum();
 static short unsigned int get2BytesNum();
 static bool searchId_3Mark(int *numBytesReaded);
 
-static bool writeOutFile(int headerBytesReaded);
+static unsigned char getNextByte();
 static void write4BytesNum(unsigned int n);
 static void closeFds();
 static bool getFreq(const char *s, int l, float *r);
@@ -60,10 +66,11 @@ static bool getFreq(const char *s, int l, float *r);
 static bool isInteger(float r, int *n, float *d);
 static int stringToInt(unsigned char *c, int size);
 static void writeInt(int n, int bytesToWrite);
-static bool seekUntilNSamples(int ini, int fin, int bytesPerSample, int *sampleInIndex, unsigned int *n);
 
-static bool copySamples(int bytesReaded, unsigned int *n, int *sampleInIndex, int * numBytesForSampleData_Out);
-static bool linearInterpolation(float decimalPart, int bytesPerSample, unsigned int *n, int * numBytesForSampleData_Out, int *sampleInIndex);
+// Complex functions
+static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSample, int *ini, int *samplesToRead);
+static bool copySamples(int bytesPerSample, int *samplesToRead, int *setIndex, unsigned int *numBytesForSampleData_Out);
+static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samplesToRead, unsigned int *numBytesForSampleData_Out, int *setIndex);
 static unsigned int writeSamples();
 
 // Functions to manage errors, the program can finish because the use of these functions (process will end, use of exit()).
@@ -262,6 +269,7 @@ static void writeInt(int n, int bytesToWrite){
 
 	free(s);
 }
+
 /* Functions to manage errors */
 static void manageReadWriteErrors(FILE *localFd){
 	if(ferror(localFd) != 0 ){
@@ -280,53 +288,83 @@ static void manageSeekErrors(){
 }
 
 /* Complex Functions */
-static bool seekUntilNSamples(int ini, int fin, int bytesPerSample, int *sampleInIndex, unsigned int *n){
-	bool goOut;
+/**
+	-- GENERAL NOTES FOR THE FOLLOWING FUNCTIONS --
+
+	@param  bytesPerSample :in
+		How many bytes are per sample
+
+	@param samplesToRead :in/out
+		How many samples we can read in the file we are reading
+
+	@param setIndex :in/out
+		Represents the index of the Sets of samples who have file.channels of lenght
+
+	@param numBytesForSampleData :in/out
+		How many bytes the program have just written in the out file
+*/
+
+// This function set the value of ini to the same value of fin, and seek the corresponding distance of each index in the in file.
+static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSample, int *ini, int *samplesToRead){
+	
+	bool goOut = false;
 	int offset;
+	int iniFinDiff = ( fin - *(ini) );
+	int samplesToShift = file.channels*iniFinDiff;
 
-	offset = ini < fin ? bytesPerSample*file.channels : (-1)*bytesPerSample*file.channels;
-	goOut = offset > 0 ? ( *(n) < offset ) : false;
+	if (iniFinDiff > 0)	
+		goOut = ( *(samplesToRead) < samplesToShift );
 
-	while( ini != fin && !goOut){
-		
+	else if (iniFinDiff < 0)
+		goOut = ( totalSamplesInFile < (-1)*samplesToShift + *(samplesToRead) );
+	
+	//Case ini == fin
+	else
+		goto goto_mark1;
+
+
+	if(!goOut){
+
+		offset = bytesPerSample*file.channels*iniFinDiff;
+
 		if (fseek(fd,offset,SEEK_CUR) == -1)
 			manageSeekErrors();
-		
-		*(n) += (-1)*offset;
-		*(sampleInIndex) = offset > 0 ? ( *(sampleInIndex)+1 ) : ( *(sampleInIndex)-1 );
-		ini = offset > 0 ? ( ini+1 ) : ( ini-1 );
-		goOut = offset > 0 ? ( *(n) < offset ) : false;
-		
+
+		*(ini) = fin;
+		*(samplesToRead) +=	(-1)*samplesToShift;		 
 	}
 
+	goto_mark1:
 	return goOut;	
 }
 
-static bool copySamples(int bytesPerSample, unsigned int *n, int *sampleInIndex, int * numBytesForSampleData_Out){
+
+static bool copySamples(int bytesPerSample, int *samplesToRead, int *setIndex, unsigned int *numBytesForSampleData_Out){
 	
-	unsigned char * sample = (unsigned char*) malloc(sizeof(char)*bytesPerSample);
+	unsigned char * sample;
 	bool goOut;
+	int bytesToRW;
 
-	goOut = ( *(n) < bytesPerSample*file.channels);
-	*(n) -= bytesPerSample*file.channels;
+	goOut = ( *(samplesToRead) < file.channels );
 	
-	for (int i = 0; i < file.channels && !goOut; ++i){
+	if(!goOut){
 
-		//Copy one sample			
-		if(fread(sample, sizeof(char),bytesPerSample, fd) != bytesPerSample)
+		bytesToRW = bytesPerSample * file.channels;
+		sample = (unsigned char*) malloc(sizeof(unsigned char)*bytesToRW);
+
+		//Copy one samplePerChannel			
+		if(fread(sample, sizeof(unsigned char),bytesToRW, fd) != bytesToRW)
 			manageReadWriteErrors(fd);
-		
-		if(fwrite(sample, sizeof(char), bytesPerSample,fd_out) != bytesPerSample)
+			
+		if(fwrite(sample, sizeof(unsigned char), bytesToRW,fd_out) != bytesToRW)
 			manageReadWriteErrors(fd_out);
 	
-	}		
+		*(numBytesForSampleData_Out) += bytesToRW;
+		*(setIndex)+=1;
+		*(samplesToRead) -= file.channels;
 
-	if(!goOut){
-		*(numBytesForSampleData_Out) += bytesPerSample*file.channels;
-		*(sampleInIndex)+=1;
+		free(sample);
 	}
-
-	free(sample);
 
 	return goOut;
 }
@@ -334,49 +372,61 @@ static bool copySamples(int bytesPerSample, unsigned int *n, int *sampleInIndex,
 // Interpolacion
 // wtout[i] = wtin[j]+(ci)*(wtin[j+1]-wtin[j])
 // j = parte etera de i, ci = i-j (parte decimal de i) 
-static bool linearInterpolation(float decimalPart, int bytesPerSample, unsigned int *n, int * numBytesForSampleData_Out, int *sampleInIndex){
+static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samplesToRead, unsigned int *numBytesForSampleData_Out, int *setIndex){
 	
-	unsigned char * sample = (unsigned char*) malloc(sizeof(char)*bytesPerSample);
+	unsigned char **sample;
 	bool goOut;
-	float wtinJPlus1,wtinJ,wtoutI;
+	int *wtinJPlus1, *wtinJ; //, *wtoutI;
+	int totalSamplesToBeReaded = file.channels*2;
 
-	goOut = ( *(n) < bytesPerSample*file.channels*2);
-	*(n) -= bytesPerSample*file.channels*2;
-
-	for (int i = 0; i < file.channels && !goOut; ++i){
-		
-		//Read two samples			
-		if(fread(sample, sizeof(char),bytesPerSample, fd) != bytesPerSample)
-			manageReadWriteErrors(fd);
-			
-		wtinJ = stringToInt(sample,bytesPerSample);
-		
-		/*if (fseek(fd,bytesPerSample*(file.channels-1),SEEK_CUR) == -1)
-			manageSeekErrors();
-
-		if(fread(sample, sizeof(char),bytesPerSample, fd) != bytesPerSample)
-			manageReadWriteErrors(fd);
-
-		wtinJPlus1 = stringToInt(sample,bytesPerSample);
+	goOut = ( *(samplesToRead) < totalSamplesToBeReaded );
 	
-		// Interpolar
-		wtoutI = wtinJ + decimalPart*(wtinJPlus1-wtinJ);
+
+	if( !goOut ){
 			
-		writeInt( wtoutI, bytesPerSample);
-
-		if (fseek(fd,bytesPerSample*file.channels,SEEK_CUR) == -1)
-			manageSeekErrors();*/
+		sample = (unsigned char**) malloc(sizeof(unsigned char*)*totalSamplesToBeReaded);
+		wtinJ = (int*) malloc(sizeof(int)*totalSamplesToBeReaded);
+		wtinJPlus1 = (int*) malloc(sizeof(int)*totalSamplesToBeReaded);
+		//wtoutI = (int*) malloc(sizeof(int)*file.channels);
 		
-		writeInt( wtoutJ, bytesPerSample);		
-		
-	}// For
+		for (int i = 0; i < totalSamplesToBeReaded; ++i){
+			sample[i] = (unsigned char*) malloc(sizeof(unsigned char)*bytesPerSample);
 
-	if(!goOut){
-		*(sampleInIndex)+=2; 
-		*(numBytesForSampleData_Out) += bytesPerSample*file.channels*2;
+			if(fread(sample[i], sizeof(unsigned char),bytesPerSample, fd) != bytesPerSample)
+				manageReadWriteErrors(fd);		
+		}
+
+		for (int i = 0; i < file.channels; i++)
+			wtinJ[i] = stringToInt(sample[i],bytesPerSample); 				// This function won't be used in the future
+		
+		for (int i = file.channels; i < totalSamplesToBeReaded; i++)
+			wtinJPlus1[i-file.channels] = stringToInt(sample[i],bytesPerSample); 			// This function won't be used in the future
+		
+		// Here will be the interpolation, fix arithmetic
+		// Pass the decimalPart to fix
+
+		// This will change
+		for (int i = 0; i < file.channels; i++)
+			writeInt( wtinJ[i], bytesPerSample);		
+
+		// This will change
+		for (int i = file.channels; i < totalSamplesToBeReaded; i++)
+			writeInt( wtinJPlus1[i-file.channels], bytesPerSample);		
+		
+		
+		*(samplesToRead) -= totalSamplesToBeReaded;
+		*(setIndex) += file.channels*2; 
+		*(numBytesForSampleData_Out) += bytesPerSample*totalSamplesToBeReaded;
+		
+		// Free memory
+		for (int i = 0; i < totalSamplesToBeReaded; ++i)
+			free(sample[i]);
+		
+		free(sample);
+		free(wtinJ);
+		free(wtinJPlus1);
+		//free(wtoutI);
 	}
-
-	free(sample);
 
 	return goOut;
 }
@@ -385,38 +435,43 @@ static unsigned int writeSamples(){
 
 	bool goOut = false;
 	int bytesPerSample = file.numBitsPerSample/8;
-	int sampleInFile = file.numBytesForSampleData/bytesPerSample;
-	
-	int numBytesForSampleData_Out = 0;
-	
+	int totalSamplesInFile = file.numBytesForSampleData/bytesPerSample;
+	int samplesToRead = totalSamplesInFile;
+
+	unsigned int numBytesForSampleData_Out = 0;
 	float sampleOutIndex = 0;
-	int sampleInIndex = 0;
+	int setIndex = 0;
 	int integerPart;
+
 	float decimalPart;
 
 	while( !goOut ){
 		
 		if ( isInteger(sampleOutIndex,&integerPart,&decimalPart) ){
 			
-			goOut = seekUntilNSamples(sampleInIndex, sampleOutIndex, bytesPerSample, &sampleInIndex, &n);
+			goOut = seekUntilNSamples(totalSamplesInFile, sampleOutIndex, bytesPerSample, &setIndex, &samplesToRead);
 			
 			if( !goOut )
-				goOut = copySamples(bytesPerSample, &n, &sampleInIndex, &numBytesForSampleData_Out);
+				goOut = copySamples(bytesPerSample, &samplesToRead, &setIndex, &numBytesForSampleData_Out);
 		}
 		else{
 						
-			goOut = seekUntilNSamples(sampleInIndex, integerPart, bytesPerSample, &sampleInIndex, &n);
+			goOut = seekUntilNSamples(totalSamplesInFile, integerPart, bytesPerSample, &setIndex, &samplesToRead);
 		
 			if( !goOut )
-				goOut = linearInterpolation(decimalPart, bytesPerSample, &n, &numBytesForSampleData_Out, &sampleInIndex);
+				goOut = linearInterpolation(decimalPart, bytesPerSample, &samplesToRead, &numBytesForSampleData_Out, &setIndex);
 
 		}
 
 		// Prepare next index
 		sampleOutIndex += step;
 
-		if(numBytesForSampleData_Out>file.numBytesForSampleData)
+		if(verbose && numBytesForSampleData_Out>file.numBytesForSampleData)
 			printf("cucucuc\n");
+
+		if(verbose)
+			printf("SetIndex: %i samplesToRead: %i \n", setIndex, samplesToRead);
+
 		
 	}//While
 
@@ -617,7 +672,7 @@ static bool setup(int argc, char const *argv[]){
 				break;
 
 			case'v': 
-				printf("Program to generate notes from others notes. Using the .wav file as a wavetable and doing linear interpolation between samples.\n\n");	
+				verbose = true;
 				break;
 		
 			default:
