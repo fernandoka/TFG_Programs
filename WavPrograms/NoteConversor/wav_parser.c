@@ -415,7 +415,7 @@ static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samp
 		
 		
 		*(samplesToRead) -= totalSamplesToBeReaded;
-		*(setIndex) += file.channels*2; 
+		*(setIndex) += 2; 
 		*(numBytesForSampleData_Out) += bytesPerSample*totalSamplesToBeReaded;
 		
 		// Free memory
