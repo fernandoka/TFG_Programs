@@ -466,6 +466,7 @@ static unsigned int writeSamples(){
 		// Prepare next index
 		setOutIndex += step;
 
+		// This is only necesary in this version, when the interpolation will be done this wont be necessary.
 		goOut = (numBytesForSampleData_Out >= file.numBytesForSampleData);
 
 		if(verbose)
