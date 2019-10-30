@@ -312,15 +312,15 @@ static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSampl
 	int iniFinDiff = ( fin - *(ini) );
 	int samplesToShift = file.channels*iniFinDiff;
 
-	if (iniFinDiff > 0)	
-		goOut = ( *(samplesToRead) < samplesToShift );
+	if (iniFinDiff < 0)	
+		goto goto_mark1;
 
-	else if (iniFinDiff < 0)
+	else if (iniFinDiff == 0)
 		goOut = ( totalSamplesInFile < (-1)*samplesToShift + *(samplesToRead) );
 	
-	//Case ini == fin
+	//Case iniFinDiff > 0
 	else
-		goto goto_mark1;
+		goOut = ( *(samplesToRead) < samplesToShift );
 
 
 	if(!goOut){
@@ -360,7 +360,7 @@ static bool copySamples(int bytesPerSample, int *samplesToRead, int *setIndex, u
 			manageReadWriteErrors(fd_out);
 	
 		*(numBytesForSampleData_Out) += bytesToRW;
-		*(setIndex)+=1;
+		*(setIndex) +=1;
 		*(samplesToRead) -= file.channels;
 
 		free(sample);
@@ -466,8 +466,7 @@ static unsigned int writeSamples(){
 		// Prepare next index
 		setOutIndex += step;
 
-		if(verbose && numBytesForSampleData_Out>file.numBytesForSampleData)
-			printf("cucucuc\n");
+		goOut = (numBytesForSampleData_Out >= file.numBytesForSampleData);
 
 		if(verbose)
 			printf("SetIndex: %i samplesToRead: %i \n", setIndex, samplesToRead);
