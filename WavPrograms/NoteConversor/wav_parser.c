@@ -325,7 +325,7 @@ static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSampl
 
 	if(!goOut){
 
-		offset = bytesPerSample*file.channels*iniFinDiff;
+		offset = bytesPerSample*samplesToShift;
 
 		if (fseek(fd,offset,SEEK_CUR) == -1)
 			manageSeekErrors();
@@ -439,7 +439,7 @@ static unsigned int writeSamples(){
 	int samplesToRead = totalSamplesInFile;
 
 	unsigned int numBytesForSampleData_Out = 0;
-	float sampleOutIndex = 0;
+	float setOutIndex = 0;
 	int setIndex = 0;
 	int integerPart;
 
@@ -447,9 +447,9 @@ static unsigned int writeSamples(){
 
 	while( !goOut ){
 		
-		if ( isInteger(sampleOutIndex,&integerPart,&decimalPart) ){
+		if ( isInteger(setOutIndex,&integerPart,&decimalPart) ){
 			
-			goOut = seekUntilNSamples(totalSamplesInFile, sampleOutIndex, bytesPerSample, &setIndex, &samplesToRead);
+			goOut = seekUntilNSamples(totalSamplesInFile, setOutIndex, bytesPerSample, &setIndex, &samplesToRead);
 			
 			if( !goOut )
 				goOut = copySamples(bytesPerSample, &samplesToRead, &setIndex, &numBytesForSampleData_Out);
@@ -464,7 +464,7 @@ static unsigned int writeSamples(){
 		}
 
 		// Prepare next index
-		sampleOutIndex += step;
+		setOutIndex += step;
 
 		if(verbose && numBytesForSampleData_Out>file.numBytesForSampleData)
 			printf("cucucuc\n");
@@ -676,7 +676,7 @@ static bool setup(int argc, char const *argv[]){
 				break;
 		
 			default:
-				perror("USAGE: ./exec -F <dir Wav file> -O <dir of out file, should end with / >-S <nº of samples to skip> \nUSE -v to show some notes");
+				perror("USAGE: ./exec -F <dir Wav file> -O <dir of out file, should end with / -T target frequency -B base frequency> \nUSE -v to show the value of the file out samples");
 				return false;
 		}
 	}

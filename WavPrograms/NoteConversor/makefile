@@ -3,57 +3,58 @@ CC=gcc
 #OBJS=$(SRC:.c=.o)
 #TARGETS=$(SRC:.c=.elf)
 CFLAGS=-Wall 
+NAME=wav_parser
 
-make : wav_parser.elf
+make : $(NAME).elf
 
-all: wav_parser.elf wav_parser_op2.elf wav_parser_op3.elf wav_parser_debug.elf
+all: $(NAME).elf $(NAME)_op2.elf $(NAME)_op3.elf $(NAME)_debug.elf
 
-op1: wav_parser_op1.elf
+op1: $(NAME)_op1.elf
 
-op2: wav_parser_op2.elf
+op2: $(NAME)_op2.elf
 
-op3: wav_parser_op3.elf
+op3: $(NAME)_op3.elf
 
-gdb: wav_parser_debug.elf
+gdb: $(NAME)_debug.elf
 
 #Without optimization
 
-wav_parser.elf: wav_parser.o
-	$(CC) $(CFLAGS) -o $@ wav_parser.o
+$(NAME).elf: $(NAME).o
+	$(CC) $(CFLAGS) -o $@ $(NAME).o
 
-wav_parser.o:	
-	$(CC) $(CFLAGS) -c -o $@ wav_parser.c
+$(NAME).o:	
+	$(CC) $(CFLAGS) -c -o $@ $(NAME).c
 
 
 #Optimization 1
-wav_parser_op1.elf: wav_parser_op1.o
-	$(CC) $(CFLAGS) -O1 -o $@ wav_parser_op1.o
+$(NAME)_op1.elf: $(NAME)_op1.o
+	$(CC) $(CFLAGS) -O1 -o $@ $(NAME)_op1.o
 
-wav_parser_op1.o:	
-	$(CC) $(CFLAGS) -O1 -c -o $@ wav_parser.c
+$(NAME)_op1.o:	
+	$(CC) $(CFLAGS) -O1 -c -o $@ $(NAME).c
 
 
 #Optimization 2
-wav_parser_op2.elf: wav_parser_op2.o
-	$(CC) $(CFLAGS) -O2 -o $@ wav_parser_op2.o
+$(NAME)_op2.elf: $(NAME)_op2.o
+	$(CC) $(CFLAGS) -O2 -o $@ $(NAME)_op2.o
 
-wav_parser_op2.o:	
-	$(CC) $(CFLAGS) -O2 -c -o $@ wav_parser.c
+$(NAME)_op2.o:	
+	$(CC) $(CFLAGS) -O2 -c -o $@ $(NAME).c
 
 
 #Optimization 3
-wav_parser_op3.elf: wav_parser_op3.o
-	$(CC) $(CFLAGS) -O3 -o $@ wav_parser_op3.o
+$(NAME)_op3.elf: $(NAME)_op3.o
+	$(CC) $(CFLAGS) -O3 -o $@ $(NAME)_op3.o
 
-wav_parser_op3.o:	
-	$(CC) $(CFLAGS) -O3 -c -o $@ wav_parser.c
+$(NAME)_op3.o:	
+	$(CC) $(CFLAGS) -O3 -c -o $@ $(NAME).c
 
 #To use gdb
-wav_parser_debug.elf: wav_parser_debug.o
-	$(CC) $(CFLAGS) -g -o $@ wav_parser_debug.o 
+$(NAME)_debug.elf: $(NAME)_debug.o
+	$(CC) $(CFLAGS) -g -o $@ $(NAME)_debug.o 
 
-wav_parser_debug.o: 	
-	$(CC) $(CFLAGS) -g -c -o $@ wav_parser.c 
+$(NAME)_debug.o: 	
+	$(CC) $(CFLAGS) -g -c -o $@ $(NAME).c 
 
 clean:
 	-rm -f *.o
