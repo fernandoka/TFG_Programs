@@ -376,8 +376,10 @@ static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samp
 	
 	unsigned char **sample;
 	bool goOut;
-	int *wtinJPlus1, *wtinJ; //, *wtoutI;
+	int *wtinJPlus1, *wtinJ;
+	int wtoutI;
 	int totalSamplesToBeReaded = file.channels*2;
+	float wtinJPlus1_f, wtinJ_f, wtoutI_f;
 
 	goOut = ( *(samplesToRead) < totalSamplesToBeReaded );
 	
@@ -387,7 +389,6 @@ static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samp
 		sample = (unsigned char**) malloc(sizeof(unsigned char*)*totalSamplesToBeReaded);
 		wtinJ = (int*) malloc(sizeof(int)*totalSamplesToBeReaded);
 		wtinJPlus1 = (int*) malloc(sizeof(int)*totalSamplesToBeReaded);
-		//wtoutI = (int*) malloc(sizeof(int)*file.channels);
 		
 		for (int i = 0; i < totalSamplesToBeReaded; ++i){
 			sample[i] = (unsigned char*) malloc(sizeof(unsigned char)*bytesPerSample);
@@ -402,21 +403,27 @@ static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samp
 		for (int i = file.channels; i < totalSamplesToBeReaded; i++)
 			wtinJPlus1[i-file.channels] = stringToInt(sample[i],bytesPerSample); 			// This function won't be used in the future
 		
-		// Here will be the interpolation, fix arithmetic
-		// Pass the decimalPart to fix
+		// Interpolation float arithmetic
+		for (int i = 0; i < file.channels; i++){
+			
+			//Fix to float conversion
+			wtinJ_f = ((float)wtinJ[i])/(1<<23);
+			wtinJPlus1_f = ((float)wtinJPlus1[i])/(1<<23);
+			
+			//Float interpolation
+			wtoutI_f = wtinJ_f + decimalPart*(wtinJPlus1_f-wtinJ_f);
 
-		// This will change
-		for (int i = 0; i < file.channels; i++)
-			writeInt( wtinJ[i], bytesPerSample);		
-
-		// This will change
-		for (int i = file.channels; i < totalSamplesToBeReaded; i++)
-			writeInt( wtinJPlus1[i-file.channels], bytesPerSample);		
-		
+			if(verbose)
+				printf("Interpolated sample value:%f\n", wtoutI_f);
+			
+			//Float to fix conversion
+			wtoutI = ((int)wtoutI_f)*(1<<23);
+			writeInt( wtoutI, bytesPerSample);		
+		}
 		
 		*(samplesToRead) -= totalSamplesToBeReaded;
 		*(setIndex) += 2; 
-		*(numBytesForSampleData_Out) += bytesPerSample*totalSamplesToBeReaded;
+		*(numBytesForSampleData_Out) += bytesPerSample*file.channels;
 		
 		// Free memory
 		for (int i = 0; i < totalSamplesToBeReaded; ++i)
@@ -425,7 +432,6 @@ static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samp
 		free(sample);
 		free(wtinJ);
 		free(wtinJPlus1);
-		//free(wtoutI);
 	}
 
 	return goOut;
@@ -467,10 +473,7 @@ static unsigned int writeSamples(){
 		setOutIndex += step;
 
 		// This is only necesary in this version, when the interpolation will be done this wont be necessary.
-		goOut = (numBytesForSampleData_Out >= file.numBytesForSampleData);
-
-		if(verbose)
-			printf("SetIndex: %i samplesToRead: %i \n", setIndex, samplesToRead);
+		//goOut = goOut || (numBytesForSampleData_Out >= file.numBytesForSampleData);
 
 		
 	}//While
@@ -766,6 +769,5 @@ int main(int argc, char const *argv[]){
 	else
 		printf("-- >> SETUP FAILS\n ");
 
-	
 	exit(0);
 }
