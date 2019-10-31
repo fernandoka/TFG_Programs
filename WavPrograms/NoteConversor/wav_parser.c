@@ -8,7 +8,7 @@
 static FILE *fd;
 static FILE *fd_out;	
 static wav_header_t file;
-static float step; // Num steps of distance between samples
+static double step; // Num steps of distance between samples
 static bool verbose = false;
 
 /* Const variables */
@@ -20,7 +20,7 @@ static const char *id_3Mark = "data";
 static const char *outpuFileMark = "_cool.wav";
 
 
-static const float notesFreqMiddle[NUM_NOTES_PER_OCTAVE*7+4] = {	
+static const double notesFreqMiddle[NUM_NOTES_PER_OCTAVE*7+4] = {	
 
 										27.5000f,29.1353f,30.8677f,
 
@@ -61,16 +61,14 @@ static bool searchId_3Mark(int *numBytesReaded);
 static unsigned char getNextByte();
 static void write4BytesNum(unsigned int n);
 static void closeFds();
-static bool getFreq(const char *s, int l, float *r);
+static bool getFreq(const char *s, int l, double *r);
 
-static bool isInteger(float r, int *n, float *d);
-static int stringToInt(unsigned char *c, int size);
-static void writeInt(int n, int bytesToWrite);
-
+static bool isInteger(double r, int *n, double *d);
+	
 // Complex functions
 static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSample, int *ini, int *samplesToRead);
 static bool copySamples(int bytesPerSample, int *samplesToRead, int *setIndex, unsigned int *numBytesForSampleData_Out);
-static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samplesToRead, unsigned int *numBytesForSampleData_Out, int *setIndex);
+static bool linearInterpolation(double decimalPart, int bytesPerSample, int *samplesToRead, unsigned int *numBytesForSampleData_Out, int *setIndex);
 static unsigned int writeSamples();
 
 // Functions to manage errors, the program can finish because the use of these functions (process will end, use of exit()).
@@ -172,7 +170,7 @@ static void closeFds(){
 }
 	
 
-static bool getFreq(const char *s, int l, float *r){
+static bool getFreq(const char *s, int l, double *r){
 	int i=0, j = 1;
 	unsigned int octave;
 
@@ -237,37 +235,13 @@ static bool getFreq(const char *s, int l, float *r){
 		
 }
 
-static bool isInteger(float r, int *n, float *d){
-	float x;
-	*(d) = modff(r,&x);
+static bool isInteger(double r, int *n, double *d){
+	double x;
+	*(d) = modf(r,&x);
 	
 	*(n) = (int)x;
 
 	return *(d) == 0;
-}
-
-static int stringToInt(unsigned char *c, int size){
-	int n = 0;
-
-	for (int i = 0; i < size; i++)
-		 n =  c[i]<< 8*i | n; 
-	
-	return n;	
-}
-
-static void writeInt(int n, int bytesToWrite){
-	unsigned char *s = (unsigned char*) malloc( sizeof(unsigned char)*bytesToWrite );
-
-
-	for(int i = 0; i<bytesToWrite;i++){
-		s[i] = (unsigned char)(n & 0xFF);
-		n >>= 8;
-	}
-
-	if(fwrite(s, sizeof(unsigned char), bytesToWrite,fd_out) != bytesToWrite)
-		manageReadWriteErrors(fd_out); 
-
-	free(s);
 }
 
 /* Functions to manage errors */
@@ -372,53 +346,53 @@ static bool copySamples(int bytesPerSample, int *samplesToRead, int *setIndex, u
 // Interpolacion
 // wtout[i] = wtin[j]+(ci)*(wtin[j+1]-wtin[j])
 // j = parte etera de i, ci = i-j (parte decimal de i) 
-static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samplesToRead, unsigned int *numBytesForSampleData_Out, int *setIndex){
+static bool linearInterpolation(double decimalPart, int bytesPerSample, int *samplesToRead, unsigned int *numBytesForSampleData_Out, int *setIndex){
 	
-	unsigned char **sample;
+	//unsigned char **sample;
 	bool goOut;
 	int *wtinJPlus1, *wtinJ;
 	int wtoutI;
 	int totalSamplesToBeReaded = file.channels*2;
-	float wtinJPlus1_f, wtinJ_f, wtoutI_f;
+	double wtinJPlus1_f, wtinJ_f, wtoutI_f;
 
 	goOut = ( *(samplesToRead) < totalSamplesToBeReaded );
 	
 
 	if( !goOut ){
 			
-		sample = (unsigned char**) malloc(sizeof(unsigned char*)*totalSamplesToBeReaded);
+		//sample = (unsigned char**) malloc(sizeof(unsigned char*)*totalSamplesToBeReaded);
 		wtinJ = (int*) malloc(sizeof(int)*totalSamplesToBeReaded);
 		wtinJPlus1 = (int*) malloc(sizeof(int)*totalSamplesToBeReaded);
-		
-		for (int i = 0; i < totalSamplesToBeReaded; ++i){
-			sample[i] = (unsigned char*) malloc(sizeof(unsigned char)*bytesPerSample);
-
-			if(fread(sample[i], sizeof(unsigned char),bytesPerSample, fd) != bytesPerSample)
-				manageReadWriteErrors(fd);		
-		}
 
 		for (int i = 0; i < file.channels; i++)
-			wtinJ[i] = stringToInt(sample[i],bytesPerSample); 				// This function won't be used in the future
+			if(fread( &(wtinJ[i]), sizeof(char),bytesPerSample, fd) != bytesPerSample)
+				manageReadWriteErrors(fd);		
+		
+
 		
 		for (int i = file.channels; i < totalSamplesToBeReaded; i++)
-			wtinJPlus1[i-file.channels] = stringToInt(sample[i],bytesPerSample); 			// This function won't be used in the future
+			if(fread( &(wtinJPlus1[i-file.channels]), sizeof(char),bytesPerSample, fd) != bytesPerSample)
+				manageReadWriteErrors(fd);				
 		
-		// Interpolation float arithmetic
+
+		// Interpolation double arithmetic
 		for (int i = 0; i < file.channels; i++){
 			
-			//Fix to float conversion
-			wtinJ_f = ((float)wtinJ[i])/(1<<23);
-			wtinJPlus1_f = ((float)wtinJPlus1[i])/(1<<23);
+			//Fix to double conversion
+			wtinJ_f = ((double)wtinJ[i])/(1<<23);
+			wtinJPlus1_f = ((double)wtinJPlus1[i])/(1<<23);
 			
-			//Float interpolation
+			//double interpolation
 			wtoutI_f = wtinJ_f + decimalPart*(wtinJPlus1_f-wtinJ_f);
 
 			if(verbose)
 				printf("Interpolated sample value:%f\n", wtoutI_f);
 			
-			//Float to fix conversion
+			//double to fix conversion
 			wtoutI = ((int)wtoutI_f)*(1<<23);
-			writeInt( wtoutI, bytesPerSample);		
+
+			if(fwrite( &wtoutI, sizeof(char), bytesPerSample,fd_out) != bytesPerSample)
+				manageReadWriteErrors(fd_out);		
 		}
 		
 		*(samplesToRead) -= totalSamplesToBeReaded;
@@ -426,10 +400,11 @@ static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samp
 		*(numBytesForSampleData_Out) += bytesPerSample*file.channels;
 		
 		// Free memory
-		for (int i = 0; i < totalSamplesToBeReaded; ++i)
+		/*for (int i = 0; i < totalSamplesToBeReaded; ++i)
 			free(sample[i]);
-		
-		free(sample);
+		*/
+
+		//free(sample);
 		free(wtinJ);
 		free(wtinJPlus1);
 	}
@@ -445,11 +420,11 @@ static unsigned int writeSamples(){
 	int samplesToRead = totalSamplesInFile;
 
 	unsigned int numBytesForSampleData_Out = 0;
-	float setOutIndex = 0;
+	double setOutIndex = 0;
 	int setIndex = 0;
 	int integerPart;
 
-	float decimalPart;
+	double decimalPart;
 
 	while( !goOut ){
 		
@@ -620,7 +595,7 @@ static bool setup(int argc, char const *argv[]){
 	bool ok1,ok2,ok3,ok4,goOut,startCount;
 	int lenOfFileName,posOfForwardSlash,cont;
 	char *note;
-	float targetFreq,baseFreq;
+	double targetFreq,baseFreq;
 
 	fileName = dirOutFile = Fname = NULL;
 	startCount = ok1 = ok2 = ok3 = ok4 = goOut = false;
