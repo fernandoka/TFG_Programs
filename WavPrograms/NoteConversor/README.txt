@@ -12,3 +12,7 @@ El archivo C4v8_cool.wav se generado apartir del siguiente comando:
 El archivo A4v8_cool.wav se generado apartir del siguiente comando:
 
 	./wav_parser_op3.elf -F notasBuenas/A4v8.wav -O notasFlama/ -T B4 -B A4
+
+# argumentos utiles
+
+r -F ../../SalamanderGrandPianoV3_48khz24bit/48khz24bit/C4v8.wav -O oopio -T C#4 -B C4

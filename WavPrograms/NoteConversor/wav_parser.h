@@ -36,15 +36,14 @@ typedef struct {
 	unsigned int numBytesForSampleData;//4 bytes
 }wav_header_t;
 
-
-typedef union{
-	char c[4];
-	int n;
-}unio_t;
-
 //To Fix stuff
-#define QN 2 		// Integer part
-#define QM 22		// Decimal part
+#define QN 1 // No entiendo por que no es 2
+#define INT32_MAX 0x007FFFFF 
+#define INT32_MIN 0x00FFFFFF
+#define MINUS_1 0x00C00000
+
+#define DOUBLE_TO_FIX(t,d,q) ( (t) ( (d)*(double)(1<<(q)) ))
+
 #define FMUL(a,b,q) ( ((a)*(b))>>(q) )
 
 // Constant
