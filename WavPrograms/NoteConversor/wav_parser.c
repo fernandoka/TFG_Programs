@@ -58,7 +58,7 @@ static int getNBytesNum(int n);
 static bool searchId_3Mark(int *numBytesReaded);
 
 static unsigned char getNextByte();
-static void write4BytesNum(unsigned int n);
+static void writeNBytesNum(int n, int numBytes);
 static void closeFds();
 static bool getFreq(const char *s, int l, double *r);
 
@@ -129,28 +129,18 @@ static unsigned char getNextByte(){
 }
 
 static int getNBytesNum(int n){
-	unsigned int aux;
+	int aux;
 
-	if(fread(&aux,sizeof(char),n,fd) != n)
+	if(fread(&aux,1,n,fd) != n)
 		manageReadWriteErrors(fd);
 
 	return aux;
 }
 
-static void write4BytesNum(unsigned int n){
-	//unsigned char c[4];
+static void writeNBytesNum(int n, int numBytes){
 	
-	//for (int i = 0; i < 4; i++){	
-	//	c[i] = (unsigned char)(n & 0x000000FF);
-	//	n >>= 8;
-	//}	
-
-	//if(fwrite(c, sizeof(unsigned char), 4,fd_out) != 4)
-		//manageReadWriteErrors(fd_out); 
-	
-	//if(fwrite(&n, sizeof(unsigned int), 1,fd_out) != 1)
-		//manageReadWriteErrors(fd_out); 
-
+	if(fwrite(&n, 1, numBytes,fd_out) != numBytes)
+		manageReadWriteErrors(fd_out); 
 
 }
 
@@ -306,26 +296,28 @@ static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSampl
 static bool copySamples(int bytesPerSample, int *samplesToRead, int *setIndex, unsigned int *numBytesForSampleData_Out){
 	
 	bool goOut;
-	int bytesToRW,sampleVal,aux;
-
+	int bytesToRW;
+	unsigned char *samplesData;
+	
 	goOut = ( *(samplesToRead) < file.channels );
 	
 	if(!goOut){
 
-		aux =bytesToRW = bytesPerSample * file.channels;
-		
-		//Copy one samplePerChannel			
-		aux = fread(&sampleVal, 1,bytesToRW, fd);
-		if( aux != bytesToRW)
+		bytesToRW = bytesPerSample * file.channels;
+		samplesData = (unsigned char*) malloc(sizeof(unsigned char)*bytesToRW);
+
+		//Copy one samplePerChannel	
+		if(fread(samplesData, sizeof(unsigned char),bytesToRW, fd) != bytesToRW)
 			manageReadWriteErrors(fd);
-		
-		aux = fwrite(&sampleVal, 1, bytesToRW,fd_out);
-		if( aux != bytesToRW)
+
+		if( fwrite(samplesData, sizeof(unsigned char), bytesToRW, fd_out ) != bytesToRW)	
 			manageReadWriteErrors(fd_out);
 	
 		*(numBytesForSampleData_Out) += bytesToRW;
 		*(setIndex) +=1;
 		*(samplesToRead) -= file.channels;
+		
+		free(samplesData);
 	}
 
 	return goOut;
@@ -524,7 +516,7 @@ static bool writeOutFile(int headerBytesReaded){
 		manageReadWriteErrors(fd_out);
 	
 	fileOutSize = numBytesForSampleData_Out+headerBytesReaded;
-	write4BytesNum(fileOutSize);
+	writeNBytesNum(fileOutSize, sizeof(unsigned int));
 		
 	rewind(fd);
 	if(fseek(fd,8,SEEK_CUR) == -1)
@@ -536,7 +528,7 @@ static bool writeOutFile(int headerBytesReaded){
 	if(fwrite(c, sizeof(char), headerBytesReaded-12,fd_out) != headerBytesReaded-12)
 		manageReadWriteErrors(fd_out);
 
- 	write4BytesNum(numBytesForSampleData_Out);//numBytesForSampleData_Out
+ 	writeNBytesNum(numBytesForSampleData_Out, sizeof(unsigned int));//numBytesForSampleData_Out
 	
 	printf("\nWriting new wav file\n");
 	printf(" 	fileOutSize: %i\n",fileOutSize);
