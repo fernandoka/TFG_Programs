@@ -54,8 +54,7 @@ static bool writeOutFile(int headerBytesReaded);
 
 // Aux functions
 static bool checkCharacters(const char *ch);
-static unsigned int get4BytesNum();
-static short unsigned int get2BytesNum();
+static int getNBytesNum(int n);
 static bool searchId_3Mark(int *numBytesReaded);
 
 static unsigned char getNextByte();
@@ -129,39 +128,30 @@ static unsigned char getNextByte(){
 	return c;
 }
 
-static unsigned int get4BytesNum(){
+static int getNBytesNum(int n){
 	unsigned int aux;
-	aux = 0;
 
-	for (int i = 0; i < 4; i++)
-		aux = getNextByte() << 8*i | aux; // Desplazo a la izquierda
-	
-	
-
-	return aux;
-}
-
-static short unsigned int get2BytesNum(){
-	unsigned int aux;
-	aux = 0;
-	
-	for (int i = 0; i < 2; i++)
-		aux = getNextByte() << 8*i | aux; // Desplazo a la izquierda
-
+	if(fread(&aux,sizeof(char),n,fd) != n)
+		manageReadWriteErrors(fd);
 
 	return aux;
 }
 
 static void write4BytesNum(unsigned int n){
-	unsigned char c[4];
+	//unsigned char c[4];
 	
-	for (int i = 0; i < 4; i++){	
-		c[i] = (unsigned char)(n & 0x000000FF);
-		n >>= 8;
-	}	
+	//for (int i = 0; i < 4; i++){	
+	//	c[i] = (unsigned char)(n & 0x000000FF);
+	//	n >>= 8;
+	//}	
 
-	if(fwrite(c, sizeof(unsigned char), 4,fd_out) != 4)
-		manageReadWriteErrors(fd_out); 
+	//if(fwrite(c, sizeof(unsigned char), 4,fd_out) != 4)
+		//manageReadWriteErrors(fd_out); 
+	
+	//if(fwrite(&n, sizeof(unsigned int), 1,fd_out) != 1)
+		//manageReadWriteErrors(fd_out); 
+
+
 }
 
 static void closeFds(){
@@ -315,29 +305,27 @@ static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSampl
 
 static bool copySamples(int bytesPerSample, int *samplesToRead, int *setIndex, unsigned int *numBytesForSampleData_Out){
 	
-	unsigned char * sample;
 	bool goOut;
-	int bytesToRW;
+	int bytesToRW,sampleVal,aux;
 
 	goOut = ( *(samplesToRead) < file.channels );
 	
 	if(!goOut){
 
-		bytesToRW = bytesPerSample * file.channels;
-		sample = (unsigned char*) malloc(sizeof(unsigned char)*bytesToRW);
-
+		aux =bytesToRW = bytesPerSample * file.channels;
+		
 		//Copy one samplePerChannel			
-		if(fread(sample, sizeof(unsigned char),bytesToRW, fd) != bytesToRW)
+		aux = fread(&sampleVal, 1,bytesToRW, fd);
+		if( aux != bytesToRW)
 			manageReadWriteErrors(fd);
-			
-		if(fwrite(sample, sizeof(unsigned char), bytesToRW,fd_out) != bytesToRW)
+		
+		aux = fwrite(&sampleVal, 1, bytesToRW,fd_out);
+		if( aux != bytesToRW)
 			manageReadWriteErrors(fd_out);
 	
 		*(numBytesForSampleData_Out) += bytesToRW;
 		*(setIndex) +=1;
 		*(samplesToRead) -= file.channels;
-
-		free(sample);
 	}
 
 	return goOut;
@@ -466,7 +454,7 @@ static bool readHeader(int *n){
 	}
 
 
-	file.fileSize = get4BytesNum();
+	file.fileSize = (unsigned)getNBytesNum(4);
 
 	if( !checkCharacters(id_1Mark) ){
 		printf("-- >> ERROR NOT VALID HEADER MARK 1\n");
@@ -478,20 +466,20 @@ static bool readHeader(int *n){
 		return false;
 	}
 
-	file.sizeUntilNow = get4BytesNum();
-	file.format = get2BytesNum();
-	file.channels = get2BytesNum();
+	file.sizeUntilNow = (unsigned)getNBytesNum(4);
+	file.format = (short unsigned)getNBytesNum(2);
+	file.channels = (short unsigned)getNBytesNum(2);
 
 	if(file.channels > MAX_CHANNELS || file.channels < 1){
 		printf("-- >> ERROR Nº OF CHANNELS EXCEDDS THE MAX VALUE : %i, CURRENT Nº OF CHANNELSIN IN THE .WAV FILE IS: %i\n",MAX_CHANNELS,file.channels);
 		return false;
 	}
 
-	file.sampleFreq = get4BytesNum();
-	file.averageNumBytesPerSec = get4BytesNum();
+	file.sampleFreq = (unsigned)getNBytesNum(4);
+	file.averageNumBytesPerSec = (unsigned)getNBytesNum(4);
 
-	file.alin = get2BytesNum();
-	file.numBitsPerSample = get2BytesNum();
+	file.alin = (short unsigned)getNBytesNum(2);
+	file.numBitsPerSample = (short unsigned)getNBytesNum(2);
 	
 	if( file.numBitsPerSample != 8 && file.numBitsPerSample != 16 && file.numBitsPerSample != 24 && file.numBitsPerSample != 32 ){
 		printf("-- >> ERROR NOT VALID BIT RESOLUTION PER SAMPLE, RESOLUTION IS: %i\n",file.numBitsPerSample);
@@ -505,7 +493,7 @@ static bool readHeader(int *n){
 		return false;
 	}
 
-	file.numBytesForSampleData = get4BytesNum();
+	file.numBytesForSampleData = (unsigned)getNBytesNum(4);
 
 	*(n)+=4;
 
