@@ -37,6 +37,11 @@ typedef struct {
 }wav_header_t;
 
 
+typedef union{
+	char c[4];
+	int n;
+}unio_t;
+
 //To Fix stuff
 #define QN 2 		// Integer part
 #define QM 22		// Decimal part

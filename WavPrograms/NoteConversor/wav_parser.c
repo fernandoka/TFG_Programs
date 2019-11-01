@@ -63,7 +63,9 @@ static void closeFds();
 static bool getFreq(const char *s, int l, double *r);
 
 static bool isInteger(double r, int *n, double *d);
-	
+static int stringToInt(unsigned char *c, int size);
+static void writeInt(int n, int bytesToWrite);
+
 // Complex functions
 static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSample, int *ini, int *samplesToRead);
 static bool copySamples(int bytesPerSample, int *samplesToRead, int *setIndex, unsigned int *numBytesForSampleData_Out);
@@ -78,7 +80,6 @@ static void manageSeekErrors();
 /* Aux functions */
 static bool searchId_3Mark(int *numBytesReaded){
 	unsigned char s[3],c;
-	short int i;
 	bool found = false;
 	unsigned int n;
 
@@ -91,14 +92,12 @@ static bool searchId_3Mark(int *numBytesReaded){
 
 		if(c == id_3Mark[0]){
 			
-			i = 0;	
-			while(i < 3){
-				s[i++] = getNextByte();
-				*(numBytesReaded)+=1;
-			}
-		
+		for (short int i = 0; i < 3; i++){	
+			s[i] = getNextByte();
+		}
 			found = ( s[0] == id_3Mark[1] && s[1] == id_3Mark[2] && s[2] == id_3Mark[3] ); 
 			
+			*(numBytesReaded)+=3;
 			n-=3;
 		}
 		
@@ -149,6 +148,30 @@ static void closeFds(){
 	fclose(fd_out);
 }
 	
+
+static int stringToInt(unsigned char *c, int size){
+	int n = 0;
+
+	for (int i = 0; i < size; i++)
+		 n =  c[i]<< 8*i | n; 
+	
+	return n;	
+}
+
+static void writeInt(int n, int bytesToWrite){
+	unsigned char *s = (unsigned char*) malloc( sizeof(unsigned char)*bytesToWrite );
+
+
+	for(int i = 0; i<bytesToWrite;i++){
+		s[i] = (unsigned char)(n & 0xFF);
+		n >>= 8;
+	}
+
+	if(fwrite(s, sizeof(unsigned char), bytesToWrite,fd_out) != bytesToWrite)
+		manageReadWriteErrors(fd_out); 
+
+	free(s);
+}
 
 static bool getFreq(const char *s, int l, double *r){
 	int i=0, j = 1;
@@ -328,9 +351,9 @@ static bool copySamples(int bytesPerSample, int *samplesToRead, int *setIndex, u
 // j = parte etera de i, ci = i-j (parte decimal de i) 
 static bool linearInterpolation(double decimalPart, int bytesPerSample, int *samplesToRead, unsigned int *numBytesForSampleData_Out, int *setIndex){
 	
-	//unsigned char **sample;
+	unsigned char **sample;
 	bool goOut;
-	int *wtinJPlus1, *wtinJ;
+	unio_t *wtinJPlus1, *wtinJ;
 	int wtoutI;
 	int totalSamplesToBeReaded = file.channels*2;
 	double wtinJPlus1_f, wtinJ_f, wtoutI_f;
@@ -340,39 +363,43 @@ static bool linearInterpolation(double decimalPart, int bytesPerSample, int *sam
 
 	if( !goOut ){
 			
-		//sample = (unsigned char**) malloc(sizeof(unsigned char*)*totalSamplesToBeReaded);
-		wtinJ = (int*) malloc(sizeof(int)*totalSamplesToBeReaded);
-		wtinJPlus1 = (int*) malloc(sizeof(int)*totalSamplesToBeReaded);
+		sample = (unsigned char**) malloc(sizeof(unsigned char*)*totalSamplesToBeReaded);
+		wtinJ = (unio_t*) malloc(sizeof(unio_t)*file.channels);
+		wtinJPlus1 = (unio_t*) malloc(sizeof(unio_t)*file.channels);
+		
+		for (int i = 0; i < totalSamplesToBeReaded; ++i){
+			sample[i] = (unsigned char*) malloc(sizeof(unsigned char)*bytesPerSample);
+
+			if(fread(sample[i], sizeof(unsigned char),bytesPerSample, fd) != bytesPerSample)
+				manageReadWriteErrors(fd);		
+		}
 
 		for (int i = 0; i < file.channels; i++)
-			if(fread( &(wtinJ[i]), sizeof(char),bytesPerSample, fd) != bytesPerSample)
-				manageReadWriteErrors(fd);		
-		
-
+			wtinJ[i].n = stringToInt(sample[i],bytesPerSample); 				// This function won't be used in the future
 		
 		for (int i = file.channels; i < totalSamplesToBeReaded; i++)
-			if(fread( &(wtinJPlus1[i-file.channels]), sizeof(char),bytesPerSample, fd) != bytesPerSample)
-				manageReadWriteErrors(fd);				
+			wtinJPlus1[i-file.channels].n = stringToInt(sample[i],bytesPerSample); 			// This function won't be used in the future
+
 		
 
 		// Interpolation double arithmetic
 		for (int i = 0; i < file.channels; i++){
 			
 			//Fix to double conversion
-			wtinJ_f = ((double)wtinJ[i])/(1<<23);
-			wtinJPlus1_f = ((double)wtinJPlus1[i])/(1<<23);
+			wtinJ_f = ((double)wtinJ[i].n)/(1<<23);
+			wtinJPlus1_f = ((double)wtinJPlus1[i].n)/(1<<23);
 			
 			//double interpolation
 			wtoutI_f = wtinJ_f + decimalPart*(wtinJPlus1_f-wtinJ_f);
 
 			if(verbose)
-				printf("Interpolated sample value:%f\n", wtoutI_f);
+				printf("wtinJ: %f  wtinJPlus1: %f  decimalPart: %f   wtout: %f\n",wtinJ_f, wtinJPlus1_f, decimalPart, wtoutI_f);
 			
 			//double to fix conversion
-			wtoutI = ((int)wtoutI_f)*(1<<23);
+			wtoutI = (int)(wtoutI_f*(1<<23));
 
-			if(fwrite( &wtoutI, sizeof(char), bytesPerSample,fd_out) != bytesPerSample)
-				manageReadWriteErrors(fd_out);		
+			writeInt( wtoutI, bytesPerSample);		
+
 		}
 		
 		*(samplesToRead) -= totalSamplesToBeReaded;
@@ -380,15 +407,14 @@ static bool linearInterpolation(double decimalPart, int bytesPerSample, int *sam
 		*(numBytesForSampleData_Out) += bytesPerSample*file.channels;
 		
 		// Free memory
-		/*for (int i = 0; i < totalSamplesToBeReaded; ++i)
+		for (int i = 0; i < totalSamplesToBeReaded; ++i)
 			free(sample[i]);
-		*/
 
-		//free(sample);
+		free(sample);
 		free(wtinJ);
 		free(wtinJPlus1);
+	
 	}
-
 	return goOut;
 }
 
@@ -426,11 +452,10 @@ static unsigned int writeSamples(){
 
 		// Prepare next index
 		setOutIndex += step;
-
+		
 		// This is only necesary in this version, when the interpolation will be done this wont be necessary.
 		//goOut = goOut || (numBytesForSampleData_Out >= file.numBytesForSampleData);
 
-		
 	}//While
 
 	return numBytesForSampleData_Out;
@@ -501,10 +526,10 @@ static bool writeOutFile(int headerBytesReaded){
 
 	// Move file descriptor
 	rewind(fd);
-	if(fseek(fd,headerBytesReaded,SEEK_CUR) == -1)
+	if(fseek(fd,headerBytesReaded+1,SEEK_CUR) == -1)
 		manageSeekErrors(); 
 	
-	if(fseek(fd_out,headerBytesReaded,SEEK_CUR) == -1) 
+	if(fseek(fd_out,headerBytesReaded+1,SEEK_CUR) == -1) 
 		manageSeekErrors();
 
 	// Write samples
