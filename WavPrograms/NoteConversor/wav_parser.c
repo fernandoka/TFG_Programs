@@ -67,7 +67,6 @@ static int stringToInt(unsigned char *c, int size);
 static void writeInt(int n, int bytesToWrite);
 
 static int overflowUnderflowFix(int n);
-static int fixMul(int a, int b, const int q);
 
 // Complex functions
 static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSample, int *ini, int *samplesToRead);
@@ -260,15 +259,6 @@ static int overflowUnderflowFix(int n){
 	return n;
 }
 
-static int fixMul(int a, int b, const int q){
-	long long int aux = 0;
-
-	aux = a*b;
-	aux >>=q;
-
-	return (int)aux;
-}
-
 /* Functions to manage errors */
 static void manageReadWriteErrors(FILE *localFd){
 	if(ferror(localFd) != 0 ){
@@ -408,7 +398,7 @@ static bool linearInterpolation(double decimalPart, int bytesPerSample, int *sam
 		for (int i = 0; i < file.channels; i++){
 			
 			aux = overflowUnderflowFix(wtinJPlus1[i] - wtinJ[i]);
-			aux = fixMul(fix_decimal_part,aux,QM); //FMUL(fix_decimal_part,aux,QM);
+			aux = FMUL(fix_decimal_part,aux,QM); //fixMul(fix_decimal_part,aux,QM); 
 			wtoutI = overflowUnderflowFix(wtinJ[i] + aux);
 
 			if(verbose)

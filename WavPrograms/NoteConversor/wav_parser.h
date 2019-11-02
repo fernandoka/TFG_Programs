@@ -37,8 +37,8 @@ typedef struct {
 }wav_header_t;
 
 //To Fix stuff
-#define QN 2 
-#define QM 22
+#define QN 2    // No lo uso todavia
+#define QM 22   // Con valor 23 da un sonido algo mas claro, pero falta...
 
 #define INT24_MAX 0x007FFFFF 
 #define INT24_MIN 0xFF800000
