@@ -262,9 +262,9 @@ static int overflowUnderflowFix(int n){
 
 // No entiendo lo que le pasa a la multiplicacion
 static int fixMul(int a, int b, const int q){
-	long long int aux = 0;
+	long int aux = 0;
 
-	aux = a*b;
+	aux = ((long int)a) * ((long int)b);
 	aux >>= q;
 
 	return overflowUnderflowFix( (int)aux );
@@ -519,8 +519,8 @@ static bool readHeader(int *n){
 	file.alin = (short unsigned)getNBytesNum(2);
 	file.numBitsPerSample = (short unsigned)getNBytesNum(2);
 	
-	if( file.numBitsPerSample != 8 && file.numBitsPerSample != 16 && file.numBitsPerSample != 24 && file.numBitsPerSample != 32 ){
-		printf("-- >> ERROR NOT VALID BIT RESOLUTION PER SAMPLE, RESOLUTION IS: %i\n",file.numBitsPerSample);
+	if( file.numBitsPerSample != 24 ){		//file.numBitsPerSample != 8 && file.numBitsPerSample != 16 && file.numBitsPerSample != 24 && file.numBitsPerSample != 32 ){
+		printf("-- >> ERROR NOT VALID BIT RESOLUTION PER SAMPLE, THIS VERISION ONLY ALLOW 24 BITS SAMPLE RESOLUTION RESOLUTION IS: %i\n",file.numBitsPerSample);
 		return false;
 	}
 
