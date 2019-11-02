@@ -37,12 +37,13 @@ typedef struct {
 }wav_header_t;
 
 //To Fix stuff
-#define QN 1 // No entiendo por que no es 2
-#define INT32_MAX 0x007FFFFF 
-#define INT32_MIN 0x00FFFFFF
-#define MINUS_1 0x00C00000
+#define QN 2 
+#define QM 22
 
-#define DOUBLE_TO_FIX(t,d,q) ( (t) ( (d)*(double)(1<<(q)) ))
+#define INT24_MAX 0x007FFFFF 
+#define INT24_MIN 0xFF800000
+
+#define DOUBLE_TO_FIX(t,d,q) ( (t) ( (d)*(double)(1ULL<<(q)) ))
 
 #define FMUL(a,b,q) ( ((a)*(b))>>(q) )
 

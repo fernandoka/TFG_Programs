@@ -10,7 +10,6 @@ static FILE *fd_out;
 static wav_header_t file;
 static double step; // Num steps of distance between samples
 static bool verbose = false;
-static short unsigned int QM; // Nº of decimal part
 
 /* Const variables */
 static const char *id_0Mark = "RIFF";
@@ -66,9 +65,9 @@ static bool getFreq(const char *s, int l, double *r);
 static bool isInteger(double r, int *n, double *d);
 static int stringToInt(unsigned char *c, int size);
 static void writeInt(int n, int bytesToWrite);
-static int fixAdd(int a, int b);
 
-static int fixSub(int a, int b);
+static int overflowUnderflowFix(int n);
+static int fixMul(int a, int b, const int q);
 
 // Complex functions
 static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSample, int *ini, int *samplesToRead);
@@ -251,26 +250,24 @@ static bool isInteger(double r, int *n, double *d){
 	return *(d) == 0;
 }
 
-static int fixAdd(int a, int b){
-	int res = a + b;
+static int overflowUnderflowFix(int n){
 
-	if (res > INT32_MAX)
-		res = INT32_MAX;
-	else if(res < INT32_MIN)
-		res = INT32_MIN;
+	if (n > (int)INT24_MAX)
+		n = INT24_MAX;
+	else if(n < (int)INT24_MIN)
+		n = INT24_MIN;
 
-	return res;
+	return n;
 }
 
-// a-b
-static int fixSub(int a, int b){
-	int aux = MINUS_1;
+static int fixMul(int a, int b, const int q){
+	long long int aux = 0;
 
-	aux = (int)FMUL(a,aux,QM);
-	
-	return fixAdd(a,aux);
+	aux = a*b;
+	aux >>=q;
+
+	return (int)aux;
 }
-
 
 /* Functions to manage errors */
 static void manageReadWriteErrors(FILE *localFd){
@@ -400,19 +397,19 @@ static bool linearInterpolation(double decimalPart, int bytesPerSample, int *sam
 		}
 
 		for (int i = 0; i < file.channels; i++)
-			wtinJ[i] = stringToInt(sample[i],bytesPerSample); 				// This function won't be used in the future
+			wtinJ[i] = stringToInt(sample[i],bytesPerSample);
 		
 		for (int i = file.channels; i < totalSamplesToBeReaded; i++)
-			wtinJPlus1[i-file.channels] = stringToInt(sample[i],bytesPerSample); 			// This function won't be used in the future
+			wtinJPlus1[i-file.channels] = stringToInt(sample[i],bytesPerSample);
 
 		fix_decimal_part = DOUBLE_TO_FIX( int, decimalPart, QM);
 
 		// Interpolation fix arithmetic QN 2, QM 22
 		for (int i = 0; i < file.channels; i++){
 			
-			aux = fixSub(wtinJPlus1[i],wtinJ[i]);
-			aux = FMUL(fix_decimal_part,aux,QM);
-			wtoutI = fixAdd(wtinJ[i], aux);
+			aux = overflowUnderflowFix(wtinJPlus1[i] - wtinJ[i]);
+			aux = fixMul(fix_decimal_part,aux,QM); //FMUL(fix_decimal_part,aux,QM);
+			wtoutI = overflowUnderflowFix(wtinJ[i] + aux);
 
 			if(verbose)
 				printf("wtinJ: %x  wtinJPlus1: %x  decimalPart_Fix: %x decimalPart_f: %f   wtout: %x\n",wtinJ[i], wtinJPlus1[i], fix_decimal_part, decimalPart, wtoutI);
@@ -433,7 +430,9 @@ static bool linearInterpolation(double decimalPart, int bytesPerSample, int *sam
 		free(wtinJ);
 		free(wtinJPlus1);
 	
-	}
+	}// If
+
+
 	return goOut;
 }
 
@@ -451,9 +450,11 @@ static unsigned int writeSamples(){
 
 	double decimalPart;
 
-	int i=0;
+	// debug
+	//int i=0;
+	//i < 20 &&
 
-	while( i<10 && !goOut ){
+	while( !goOut ){
 		
 		if ( isInteger(setOutIndex,&integerPart,&decimalPart) ){
 			
@@ -473,9 +474,7 @@ static unsigned int writeSamples(){
 
 		// Prepare next index
 		setOutIndex += step;
-		i++;
-		// This is only necesary in this version, when the interpolation will be done this wont be necessary.
-		//goOut = goOut || (numBytesForSampleData_Out >= file.numBytesForSampleData);
+		//i++;
 
 	}//While
 
@@ -523,8 +522,6 @@ static bool readHeader(int *n){
 		printf("-- >> ERROR NOT VALID BIT RESOLUTION PER SAMPLE, RESOLUTION IS: %i\n",file.numBitsPerSample);
 		return false;
 	}
-
-	QM = file.numBitsPerSample-QN;
 
 	*(n) = file.sizeUntilNow + (2*4)+(4*3);
 
