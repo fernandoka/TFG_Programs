@@ -10,6 +10,7 @@ static FILE *fd_out;
 static wav_header_t file;
 static double step; // Num steps of distance between samples
 static bool verbose = false;
+static int QM;
 
 /* Const variables */
 static const char *id_0Mark = "RIFF";
@@ -496,10 +497,12 @@ static bool readHeader(int *n){
 	file.alin = (short unsigned)getNBytesNum(2);
 	file.numBitsPerSample = (short unsigned)getNBytesNum(2);
 	
-	if( file.numBitsPerSample != 24 ){
-		printf("-- >> ERROR NOT VALID BIT RESOLUTION PER SAMPLE, THIS PROGRAM ONLY  ALLOW 24 BIT SAMPLE RESOLUTION RESOLUTION IS: %i\n",file.numBitsPerSample);
+	if( file.numBitsPerSample != 8 && file.numBitsPerSample != 16 && file.numBitsPerSample != 24 && file.numBitsPerSample != 32 ){
+		printf("-- >> ERROR NOT VALID BIT RESOLUTION PER SAMPLE, RESOLUTION RESOLUTION IS: %i\n",file.numBitsPerSample);
 		return false;
 	}
+
+	QM = file.numBitsPerSample-QN;
 
 	*(n) = file.sizeUntilNow + (2*4)+(4*3);
 

@@ -10,6 +10,7 @@ static FILE *fd_out;
 static wav_header_t file;
 static float step; // Num steps of distance between samples
 static bool verbose = false;
+static int QM;
 
 /* Const variables */
 static const char *id_0Mark = "RIFF";
@@ -386,8 +387,8 @@ static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samp
 		for (int i = 0; i < file.channels; i++){
 			
 			//Fix to double conversion
-			wtinJ_f = ((float)wtinJ[i])/(1<<23);
-			wtinJPlus1_f = ((float)wtinJPlus1[i])/(1<<23);
+			wtinJ_f = ((float)wtinJ[i])/(1<<QM);
+			wtinJPlus1_f = ((float)wtinJPlus1[i])/(1<<QM);
 			
 			//double interpolation
 			wtoutI_f = wtinJ_f + decimalPart*(wtinJPlus1_f-wtinJ_f);
@@ -396,7 +397,7 @@ static bool linearInterpolation(float decimalPart, int bytesPerSample, int *samp
 				printf("wtinJ: %f  wtinJPlus1: %f  decimalPart: %f   wtout: %f\n",wtinJ_f, wtinJPlus1_f, decimalPart, wtoutI_f);
 			
 			//double to fix conversion
-			wtoutI = (int)(wtoutI_f*(1<<23));
+			wtoutI = (int)(wtoutI_f*(1<<QM));
 
 			writeInt( wtoutI, bytesPerSample);		
 
@@ -453,8 +454,6 @@ static unsigned int writeSamples(){
 		// Prepare next index
 		setOutIndex += step;
 		
-		// This is only necesary in this version, when the interpolation will be done this wont be necessary.
-		//goOut = goOut || (numBytesForSampleData_Out >= file.numBytesForSampleData);
 
 	}//While
 
@@ -502,6 +501,8 @@ static bool readHeader(int *n){
 		printf("-- >> ERROR NOT VALID BIT RESOLUTION PER SAMPLE, RESOLUTION IS: %i\n",file.numBitsPerSample);
 		return false;
 	}
+	
+	QM = file.numBitsPerSample-QN;	
 
 	*(n) = file.sizeUntilNow + (2*4)+(4*3);
 

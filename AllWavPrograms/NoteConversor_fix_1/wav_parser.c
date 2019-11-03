@@ -10,6 +10,7 @@ static FILE *fd_out;
 static wav_header_t file;
 static double step; // Num steps of distance between samples
 static bool verbose = false;
+static int QM;
 
 /* Const variables */
 static const char *id_0Mark = "RIFF";
@@ -394,7 +395,7 @@ static bool linearInterpolation(double decimalPart, int bytesPerSample, int *sam
 
 		fix_decimal_part = DOUBLE_TO_FIX( int, decimalPart, QM);
 
-		// Interpolation fix arithmetic QN 2, QM 22
+		// Interpolation fix arithmetic QN 1, QM 23
 		for (int i = 0; i < file.channels; i++){
 			
 			aux = overflowUnderflowFix(wtinJPlus1[i] - wtinJ[i]);
@@ -512,6 +513,8 @@ static bool readHeader(int *n){
 		printf("-- >> ERROR NOT VALID BIT RESOLUTION PER SAMPLE, RESOLUTION IS: %i\n",file.numBitsPerSample);
 		return false;
 	}
+	
+	QM = file.numBitsPerSample-QN;
 
 	*(n) = file.sizeUntilNow + (2*4)+(4*3);
 

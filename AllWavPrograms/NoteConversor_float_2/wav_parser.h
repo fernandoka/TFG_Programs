@@ -37,9 +37,7 @@ typedef struct {
 }wav_header_t;
 
 //To Fix stuff
-#define QN 2 		// Integer part
-#define QM 22		// Decimal part
-#define FMUL(a,b,q) ( ((a)*(b))>>(q) )
+#define QN 1		// Integer part
 
 // Constant
 #define NUM_NOTES_PER_OCTAVE 12
