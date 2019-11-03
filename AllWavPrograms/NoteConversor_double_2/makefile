@@ -59,4 +59,6 @@ $(NAME)_debug.o:
 clean:
 	-rm -f *.o
 	-rm -f *.elf
-
+	
+rmWav:
+	-rm -f *.wav

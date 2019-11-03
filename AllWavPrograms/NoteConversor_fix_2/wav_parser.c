@@ -314,11 +314,11 @@ static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSampl
 	int samplesToShift = file.channels*iniFinDiff;
 
 	if (iniFinDiff < 0)	
-		goto goto_mark1;
+				goOut = ( totalSamplesInFile < (-1)*samplesToShift + *(samplesToRead) );
 
 	else if (iniFinDiff == 0)
-		goOut = ( totalSamplesInFile < (-1)*samplesToShift + *(samplesToRead) );
-	
+		goto goto_mark1;
+
 	//Case iniFinDiff > 0
 	else
 		goOut = ( *(samplesToRead) < samplesToShift );
