@@ -69,6 +69,7 @@ static void writeInt(int n, int bytesToWrite);
 
 static int overflowUnderflowFix(int n);
 static int fixMul(int a, int b, const int q);
+static int checkSign(int n);
 
 // Complex functions
 static bool seekUntilNSamples(int totalSamplesInFile, int fin, int bytesPerSample, int *ini, int *samplesToRead);
@@ -271,6 +272,14 @@ static int fixMul(int a, int b, const int q){
 	return overflowUnderflowFix( (int)aux );
 }
 
+static int checkSign(int n){
+
+	int a = n & 0x800000;
+
+	return a !=0 ?	n | 0xFFF00000 : n;
+}
+
+
 /* Functions to manage errors */
 static void manageReadWriteErrors(FILE *localFd){
 	if(ferror(localFd) != 0 ){
@@ -399,22 +408,24 @@ static bool linearInterpolation(double decimalPart, int bytesPerSample, int *sam
 		}
 
 		for (int i = 0; i < file.channels; i++)
-			wtinJ[i] = stringToInt(sample[i],bytesPerSample);
+			wtinJ[i] = checkSign( stringToInt(sample[i],bytesPerSample) );
 		
 		for (int i = file.channels; i < totalSamplesToBeReaded; i++)
-			wtinJPlus1[i-file.channels] = stringToInt(sample[i],bytesPerSample);
+			wtinJPlus1[i-file.channels] = checkSign( stringToInt(sample[i],bytesPerSample) );
 
 		fix_decimal_part = DOUBLE_TO_FIX( int, decimalPart, QM);
 
-		// Interpolation fix arithmetic QN 2, QM 22
+		// Interpolation fix arithmetic QN 1 QM 23
 		for (int i = 0; i < file.channels; i++){
-			
+
+		
 			aux = overflowUnderflowFix(wtinJPlus1[i] - wtinJ[i]);
 			aux = fixMul(fix_decimal_part,aux,QM); //FMUL(fix_decimal_part,aux,QM); 
 			wtoutI = overflowUnderflowFix(wtinJ[i] + aux);
 
 			if(verbose)
-				printf("wtinJ: %x  wtinJPlus1: %x  decimalPart_Fix: %x decimalPart_f: %f   wtout: %x\n",wtinJ[i], wtinJPlus1[i], fix_decimal_part, decimalPart, wtoutI);
+				printf("wtinJ: %lf  wtinJPlus1: %lf  decimalPart_f: %lf   wtout: %lf\n\n",((double)wtinJ[i])/(1<<23),
+				 ((double)wtinJPlus1[i])/(1<<23), decimalPart, ((double)wtoutI)/(1<<23) );
 
 			writeInt( wtoutI, bytesPerSample);		
 
@@ -611,7 +622,7 @@ static void run_parser(){
 	printf("	alin: %i\n",file.alin);
 	printf("	numBitsPerSample: %i\n",file.numBitsPerSample);
 	printf("	numBytesForSampleData: %i\n",file.numBytesForSampleData);
-	printf("	numSamples: %i\n",file.numBytesForSampleData/(file.numBitsPerSample/8));
+	printf("	numSamples: %i\n\n",file.numBytesForSampleData/(file.numBitsPerSample/8));
 
 	writeOutFile(bytesReaded);
 }

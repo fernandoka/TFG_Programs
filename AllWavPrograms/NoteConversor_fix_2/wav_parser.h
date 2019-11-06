@@ -49,4 +49,7 @@ typedef struct {
 // Constant
 #define NUM_NOTES_PER_OCTAVE 12
 #define MAX_CHANNELS 20
+// #define ADDITION_NUM 0x4c1d
+#define ADDITION_NUM 0xFF
+
 #endif

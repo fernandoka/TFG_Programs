@@ -23,3 +23,5 @@ El archivo A4v8_cool.wav se generado apartir del siguiente comando:
 # argumentos utiles para debugear con gdb:
 
 r -F ../../SalamanderGrandPianoV3_48khz24bit/48khz24bit/C4v8.wav -O oopio -T C#4 -B C4
+
+r -F ../../48.8Khz24bit_Sorted/C4v8.wav -O opioDElBueno -T C#4 -B C4
