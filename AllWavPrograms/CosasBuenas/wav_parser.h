@@ -15,7 +15,7 @@
 //To operate with strings
 #include <string.h>
 
-// To use modff() function
+// To use round() function
 #include <math.h>
 
 #include <stdbool.h>

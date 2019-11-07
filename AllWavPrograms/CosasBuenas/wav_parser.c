@@ -59,13 +59,10 @@ static int getNBytesNum(int n);
 static bool searchId_3Mark(int *numBytesReaded);
 
 static unsigned char getNextByte();
-static void writeNBytesNum(int n, int numBytes);
 static void closeFds();
 static bool getFreq(const char *s, int l, double *r);
 
-static bool isInteger(double r, int *n, double *d);
 static int rawDataToInt(unsigned char *c, int index, int size);
-static void writeInt(int n, int bytesToWrite);
 
 // Complex functions
 static int interpolateSamples(int height, int width, int *samples, int *outSamples);
@@ -73,7 +70,6 @@ static unsigned int writeSamples();
 
 // Functions to manage errors, the program can finish because the use of these functions (process will end, use of exit()).
 static void manageReadWriteErrors(FILE *localFd);
-static void manageSeekErrors();
 
 
 /* Aux functions */
@@ -135,13 +131,6 @@ static int getNBytesNum(int n){
 	return aux;
 }
 
-static void writeNBytesNum(int n, int numBytes){
-	
-	if(fwrite(&n, 1, numBytes,fd_out) != numBytes)
-		manageReadWriteErrors(fd_out); 
-
-}
-
 static void closeFds(){
 	fclose(fd); 
 	fclose(fd_out);
@@ -152,21 +141,21 @@ static int rawDataToInt(unsigned char *c, int index, int size){
 	int n,j,i;
 	
 	j = n = 0;
-	for (i = index; i < size-1; i++){
+	for (i = index; i < index+size-1; i++){
 		 n =  c[i]<< 8*j | n; 
 		 j++;
 	}
 		
-	n |=  ((signed char)c[i]<< 8*i);
+	n |=  ((signed char)c[i]<< 8*j);
 
 	return n;	
 }
 
-static void intToRawData(unsigned char *c, int n, int index, int bytesToWrite){
+static void intToRawData(unsigned char *c, int n, int index, int size){
 	int i;
 
-	for(i = index; i < bytesToWrite;i++){
-		s[i] = (unsigned char)(n & 0xFF);
+	for(i = index; i < index+size;i++){
+		c[i] = (unsigned char)(n & 0xFF);
 		n >>= 8;
 	}
 
@@ -248,13 +237,6 @@ static void manageReadWriteErrors(FILE *localFd){
 	}
 }
 
-static void manageSeekErrors(){
-	printf("Programs fails while fseek(), closing\n");
-	perror("-- >>  ERROR");
-	closeFds();
-	exit(1);
-}
-
 /* Complex functions */
 
 // wtout[j] = wtint[j] + getDecimalPart(ci)*(wtint[j+1]-wtint[j])
@@ -282,12 +264,12 @@ static int interpolateSamples(int height, int width, int *samples, int *outSampl
 		else{
 
 			for (int i = 0; i < height; ++i)
-				outSamples[i*width+j] = (int) round( (double)sample[i*width+integerPart] + decimalPart*(double)(sample[i*width+integerPart+1]-sample[i*width+integerPart]) );
+				outSamples[i*width+j] = (int) round( (double)samples[i*width+integerPart] + decimalPart*(double)(samples[i*width+integerPart+1]-samples[i*width+integerPart]) );
 			
 		}
 
 		if( verbose )
-			printf( "%8i%10i%13.5f%8i%8i%10i%11i\n", j, outSamples[j], ci, integerPart, integerPart+1, sample[integerPart], sample[integerPart+1] );
+			printf( "%8i%10i%13.5f%8i%8i%10i%11i\n", j, outSamples[j], ci, integerPart, integerPart+1, samples[integerPart], samples[integerPart+1] );
 
 		ci += step;
 		integerPart = (int)ci;
@@ -303,7 +285,8 @@ static unsigned int writeSamples(){
 
 	int bytesPerSample = file.numBitsPerSample/8;
 	int totalSamplesInFile = file.numBytesForSampleData/bytesPerSample;
-	int width = totalSamplesInFile/file.channels;  // Cuantas muestras tiene cada canal
+	int height = file.channels; 			//Cuantos canales hay
+	int width = totalSamplesInFile/height;  // Cuantas muestras tiene cada canal
 
 	int numOfInterpolatedSamplesPerChannel;
 	unsigned char *wavData;
@@ -317,30 +300,29 @@ static unsigned int writeSamples(){
 
 	// Trato las muestras como si fuera una matriz. Cada fila es un canal.
 	samples = (int*) malloc(sizeof(int)*totalSamplesInFile);	
-	outSamples = (int*) calloc(sizeof(int)*totalSamplesInFile);	// Set to zeros
+	outSamples = (int*) calloc(totalSamplesInFile,sizeof(int));	// Set to zeros
 
 	wavDataIndex = 0;
-
 	for(int j = 0; j < width; j++)
-		for(int i = 0; i < file.channels; i++){
+		for(int i = 0; i < height; i++){
 			samples[i*width+j] = rawDataToInt(wavData,wavDataIndex,bytesPerSample);
 			wavDataIndex += bytesPerSample;
 		}
 
 
 	//Interpolate samples
-	numOfInterpolatedSamplesPerChannel = interpolateSamples(file.channels,width,samples,outSamples);	
+	numOfInterpolatedSamplesPerChannel = interpolateSamples(height,width,samples,outSamples);	
+	
 	wavDataIndex = 0;
-
 	for(int j = 0; j < width; j++)
-		for(int i = 0; i < file.channels; i++){
+		for(int i = 0; i < height; i++){
 			intToRawData(wavData,outSamples[i*width+j],wavDataIndex,bytesPerSample);
 			wavDataIndex += bytesPerSample;
 		}
 
+
 	if(fwrite( (void *)wavData, 1,file.numBytesForSampleData,fd_out) != file.numBytesForSampleData) // Riff
 		manageReadWriteErrors(fd_out);
-
 
 	//Free memory
 	free(wavData); free(samples); free(outSamples);
@@ -351,7 +333,7 @@ static unsigned int writeSamples(){
 /* Functionality functions */
 static bool readHeader(int *n){
 
-	printf("Reading Header \n");
+	printf("Reading Header \n\n");
 	if( !checkCharacters(id_0Mark) ){
 		printf("-- >> ERROR NOT VALID HEADER MARK 0\n");
 		return false;
@@ -427,14 +409,15 @@ static void writeOutFile(int headerBytesReaded){
 	printf("\nWriting new wav file\n\n");
 	printf(" 	File Out Size: %i\n",file.fileSize);
 	printf("	Header Bytes Readed: %i\n",headerBytesReaded);
-	printf("	Total Num Bytes For Samples: %i\n\n",numBytesForSampleData_Out);
+	printf("	Total Num Bytes For Samples: %i\n\n",file.numBytesForSampleData);
 
-	printf("	Num Bytes For Interpolated Samples: %i\n",numBytesForSampleData_Out);
 	printf("	Bytes PerSample: %i\n",file.numBitsPerSample/8);
+	printf("	Num Bytes For Interpolated Samples: %i\n",numBytesForInterpolatedSample);
 	printf("	Total Num Samples: %i\n",file.numBytesForSampleData/(file.numBitsPerSample/8));
 	printf("	Num Interpolated Samples: %i\n\n",numBytesForInterpolatedSample/(file.numBitsPerSample/8));
 
- 	printf("	numNullSamples: %i\n",(numBytesForSampleData_Out-file.numBytesForSampleData)/(file.numBitsPerSample/8));
+ 	printf("	Num Null Bytes For Samples: %i\n",file.numBytesForSampleData-numBytesForInterpolatedSample);	
+ 	printf("	Num Null Samples: %i\n",(file.numBytesForSampleData-numBytesForInterpolatedSample)/(file.numBitsPerSample/8));
 
 }
 
