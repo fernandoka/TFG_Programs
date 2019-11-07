@@ -64,7 +64,7 @@ static void closeFds();
 static bool getFreq(const char *s, int l, double *r);
 
 static bool isInteger(double r, int *n, double *d);
-static int stringToInt(unsigned char *c, int size);
+static int rawDataToInt(unsigned char *c, int index, int size);
 static void writeInt(int n, int bytesToWrite);
 
 // Complex functions
@@ -150,12 +150,17 @@ static void closeFds(){
 }
 	
 
-static int stringToInt(unsigned char *c, int size){
-	int n = 0;
-
-	for (int i = 0; i < size; i++)
-		 n =  c[i]<< 8*i | n; 
+static int rawDataToInt(unsigned char *c, int index, int size){
+	int n,j,i;
 	
+	j = n = 0;
+	for (i = index; i < size-1; i++){
+		 n =  c[i]<< 8*j | n; 
+		 j++;
+	}
+		
+	n |=  ((signed char)c[i]<< 8*i);
+
 	return n;	
 }
 
@@ -264,38 +269,41 @@ static unsigned int writeSamples(){
 	int bytesPerSample = file.numBitsPerSample/8;
 	int totalSamplesInFile = file.numBytesForSampleData/bytesPerSample;
 	int numOFSets = totalSamplesInFile/file.channels;
-	int width = file.channels; 
+	int width = totalSamplesInFile/file.channels;  // Cuantas muestras tiene cada canal
 
 	unsigned int numBytesForSampleData_Out = 0;
-	double setOutIndex = 0;
-	int integerPart;
-
-	double decimalPart = 0;
-	double ci = 0;
-
-	unsigned char *wavData;
+	unsigned char *wavData, *wavDataOut;
 	int *samples;
+	int wavDataIndex;
 
+	// Leo todas las muestras
 	wavData = (unsigned char*) malloc(file.numBytesForSampleData);
 	if( fread( (void *)wavData, 1, file.numBytesForSampleData, fd ) != file.numBytesForSampleData )
 		manageReadWriteErrors(fd);
 
+	// Trato las muestras como si fuera una matriz. Cada fila es un canal.
 	samples = (int*) malloc(sizeof(int)*totalSamplesInFile);	
 
-	for(int i=0; i<totalSamplesInFile; i++ )
-		for (int j = 0;j < width; j++)
-			samples[i*width+j] = ((signed char)wavData[i+2] << 16) | (wavData[i+1] << 8 ) | wavData[i];
-		
+	wavDataIndex = 0;
+
+	for(int j = 0; j < width; j++)
+		for(int i = 0; i < file.channels; i++){
+			samples[i*width+j] = rawDataToInt(wavData,wavDataIndex,bytesPerSample);
+			wavDataIndex += bytesPerSample;
+		}
+
+
+	//Interpolate samples
+	numBytesForSampleData_Out = interpolateSamples(samples);
+
 	
+	wavDataOut = (unsigned char*) calloc(file.numBytesForSampleData);
 
+	for (int i = 0; i < numBytesForSampleData_Out; ++i){
+		wavDataOut[i] = samples[i*width+j]
+	}
 
-		// Prepare next index
-		ci += step;
-		integerPart = (int) ci;
-		decimalPart = ci - integerPart;
-
-	
-	if(fwrite((void *)nullSamples, 1,file.numBytesForSampleData,fd_out) != file.numBytesForSampleData) // Riff
+	if(fwrite( (void *)wavDataOut, 1,file.numBytesForSampleData,fd_out) != file.numBytesForSampleData) // Riff
 		manageReadWriteErrors(fd_out);
 
 	return numBytesForSampleData_Out;
