@@ -21,10 +21,7 @@
 #include <stdbool.h>
 
 typedef struct {
-	//int id_0; // "Riff"
 	unsigned int fileSize; // Size of the file, including header.
-	//int id_1; // "WAVE"
-	//int id_2; // "fmt "
 	int sizeUntilNow;
 	short unsigned int format; // 2 bytes
 	short unsigned int channels; // 2 bytes
@@ -32,7 +29,6 @@ typedef struct {
 	unsigned int averageNumBytesPerSec;
 	short unsigned int alin; //2 bytes
 	short unsigned int	numBitsPerSample; //2 bytes
-	//int id_3; //data
 	unsigned int numBytesForSampleData;//4 bytes
 }wav_header_t;
 
