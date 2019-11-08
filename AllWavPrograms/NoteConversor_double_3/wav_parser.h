@@ -32,9 +32,6 @@ typedef struct {
 	unsigned int numBytesForSampleData;//4 bytes
 }wav_header_t;
 
-//To Fix stuff
-#define QN 1		// Integer part
-
 // Constant
 #define NUM_NOTES_PER_OCTAVE 12
 #define MAX_CHANNELS 20

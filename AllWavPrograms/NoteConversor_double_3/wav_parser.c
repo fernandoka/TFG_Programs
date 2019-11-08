@@ -10,7 +10,6 @@ static FILE *fd_out;
 static wav_header_t file;
 static double step; // Num steps of distance between samples
 static bool verbose = false;
-static int QM;
 
 /* Const variables */
 static const char *id_0Mark = "RIFF";
@@ -27,11 +26,11 @@ static const double notesFreqMiddle[NUM_NOTES_PER_OCTAVE*7+4] = {
 
 									   	32.7032f,34.6479f,36.7081f,38.8909f,41.2035f,43.6536f,46.2493f,48.9995f,51.9130f,55.0000f,58.2705f,61.7354f,   
 									
-									   	32.7032f*2,34.6479f*2,36.7081f*2,38.8909f*2,41.2035f*2,43.6536f*2,46.2493f*2,48.9995f*2,51.9130f*2,55.0000f*2,58.2705f*2,61.7354f*2,   
+									   	65.4064f,69.2957f,73.4162f,77.7817f,82.4069f,87.3071f,92.4986f,97.9989f,103.826f,110.000f,116.541f,123.471f,   
 									
-									   	32.7032f*4,34.6479f*4,36.7081f*4,38.8909f*4,41.4035f*4,43.6536f*4,46.4493f*4,48.9995f*4,51.9130f*4,55.0000f*4,58.4705f*4,61.7354f*4,    
+									   	130.813f,138.591f,146.832f,155.563f,164.814f,174.614f,184.997f,195.998f,207.652f,220.000f,233.082f,246.942f,    
 									   	// Octava Central
-										32.7032f*8,34.6479f*8,36.7081f*8,38.8909f*8,41.8035f*8,43.6536f*8,46.8493f*8,48.9995f*8,51.9130f*8,55.0000f*8,58.8705f*8,61.7354f*8,   
+										261.626f,277.183f,293.665f,311.127f,329.628f,349.228f,369.994f,391.995f,415.305f,440.000f,466.164f,493.883f,   
 
 										32.7032f*16,34.6479f*16,36.7081f*16,38.8909f*16,41.2035f*16,43.6536f*16,46.2493f*16,48.9995f*16,51.9130f*16,55.0000f*16,58.2705f*16,61.7354f*16,    
 									 	
@@ -371,8 +370,6 @@ static bool readHeader(int *n){
 		printf("-- >> ERROR NOT VALID BIT RESOLUTION PER SAMPLE, RESOLUTION RESOLUTION IS: %i\n",file.numBitsPerSample);
 		return false;
 	}
-
-	QM = file.numBitsPerSample-QN;
 
 	*(n) = file.sizeUntilNow + (2*4)+(4*3);
 
