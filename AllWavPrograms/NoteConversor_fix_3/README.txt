@@ -25,3 +25,18 @@ El archivo A4v8_cool.wav se generado apartir del siguiente comando:
 r -F ../../SalamanderGrandPianoV3_48khz24bit/48khz24bit/C4v8.wav -O oopio -T C#4 -B C4
 
 ./wav_parser.elf -F ../48.8Khz24bit_Sorted/C4v8.wav -O iii -T C#4 -B C4
+
+
+Notas de estrellita:
+
+./wav_parser_op3.elf -F ../48.8Khz24bit_Sorted/C4v8.wav -O do -T C4 -B C4
+
+./wav_parser_op3.elf -F ../48.8Khz24bit_Sorted/C4v8.wav -O re -T D4 -B C4
+
+./wav_parser_op3.elf -F ../48.8Khz24bit_Sorted/D#4v8.wav -O fa -T F4 -B D#4
+
+./wav_parser_op3.elf -F ../48.8Khz24bit_Sorted/D#4v8.wav -O mi -T E4 -B D#4
+
+./wav_parser_op3.elf -F ../48.8Khz24bit_Sorted/F#4v8.wav -O sol -T G4 -B F#4
+
+./wav_parser_op3.elf -F ../48.8Khz24bit_Sorted/A4v8.wav -O la -T A4 -B A4
