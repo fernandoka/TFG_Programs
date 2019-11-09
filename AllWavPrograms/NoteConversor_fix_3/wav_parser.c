@@ -57,8 +57,8 @@ static void writeOutFile(int headerBytesReaded);
 static bool checkCharacters(const char *ch);
 static int getNBytesNum(int n);
 static bool searchId_3Mark(int *numBytesReaded);
-
 static unsigned char getNextByte();
+
 static void closeFds();
 static bool getFreq(const char *s, int l, double *r);
 static int rawDataToInt(unsigned char *c, int index, int size);
@@ -66,7 +66,7 @@ static int rawDataToInt(unsigned char *c, int index, int size);
 // Complex functions
 static int interpolateSamples(int height, int width, int *samples, int *outSamples);
 static unsigned int writeSamples();
-static int fixRound(long long int n);
+static int truncateCheckOverUnderFlow(long long int n);
 
 // Functions to manage errors, the program can finish because the use of these functions (process will end, use of exit()).
 static void manageReadWriteErrors(FILE *localFd);
@@ -226,8 +226,15 @@ static bool getFreq(const char *s, int l, double *r){
 		
 }
 
-static int fixRound(long long int n){
+static int truncateCheckOverUnderFlow(long long int n){
+	int aux = (int)(n >> (QM_ARITH-QM));
 
+	if (aux > (int)INT24_MAX)
+		aux = (int)INT24_MAX;
+	else if(aux < (int)INT24_MIN)
+		aux = (int)INT24_MIN;
+
+	return aux;
 }
 
 
@@ -271,16 +278,16 @@ static int interpolateSamples(int height, int width, int *samples, int *outSampl
 
 			// Alineo la coma para operar
 			for (int i = 0; i < height; ++i)
-				outSamples[i*width+j] = fixRound( ((long long int )samples[i*width+integerPart]<<QM_ARITH-QM) + 
-					(long long int)FMUL(decimalPart,((long long int)(samples[i*width+integerPart+1]-samples[i*width+integerPart])<<QM_ARITH-QM),QM_ARITH)  );
+				outSamples[i*width+j] = truncateCheckOverUnderFlow( ((long long int )samples[i*width+integerPart]<<(QM_ARITH-QM)) + 
+					(long long int)FMUL(decimalPart,((long long int)(samples[i*width+integerPart+1]-samples[i*width+integerPart])<<(QM_ARITH-QM)),QM_ARITH)  );
 			
 		}
 
 		if( verbose )
-			printf( "%8i%10i%13.5f%8i%8i%10i%11i\n", j, outSamples[j], ci, integerPart, integerPart+1, samples[integerPart], samples[integerPart+1] );
+			printf( "%8i%10i%13.5f%8i%8i%10i%11i\n", j, outSamples[j], ((double)ci)*(1<<QM_ARITH), integerPart, integerPart+1, samples[integerPart], samples[integerPart+1] );
 
-		ci += step;
-		integerPart = (int)(ci & 0xFFFFFFFF00000000); // Take the integer part
+		ci += fix_step;
+		integerPart = (int)(ci>>QM_ARITH); // Take the integer part
 		decimalPart = (long long int)(ci & 0xFFFFFFFF); // Take the decimal part
 		j++;
 
