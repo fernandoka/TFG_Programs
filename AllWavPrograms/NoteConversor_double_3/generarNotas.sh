@@ -1,50 +1,40 @@
+# Notas de estrellita:
+echo "GENERANDO NOTAS EN CARPETA ESTRELLITA"
 
-Para ejecutar el programa se debe dar como argumentos la ubicacion del archivo .wav base ( argumento -F ), la direccion en donde se generara el nuevo archivo ( argumento -O, el archivo de salida tendra el mismo nombre que el archivo de entrada salvo por una terminacion "_cool" antes del formato. Si la ruta no termina marcando una dirección, los caracteres sobrantes se concadenaran al nombre del archivo de salida ). 
+./wav_parser_op3.elf -F ../SameSize-1.06MB/A4v8-2.wav -O Estrellita/A4_ -T A4 -B A4
 
-Se debe añadir también la frecuencia objetivo ( argumento -T ) y la frecuencia base ( argumento -B ), ambas se definiran como notas siguiendo la codificación americana ( Do:C, Re:D, Mi:E, Fa:F, Sol:G, La:A, Si:B ). La aplicacion contine las frecuencias de todas las notas del piano ( 88 notas ), comenzando por A0 y terminando en C8 ( el numero indica la octava ). La frecuencia base es la frecuencia que esta almacenada en el archivo .wav de lectura, el programa no detecta la nota leyendo el archivo .wav debe indicarse, si se indica mal la frecuencia base, no se obtnedra el resultado esperado :) 
+./wav_parser_op3.elf -F ../SameSize-1.06MB/F#4v8-2.wav -O Estrellita/G4_ -T G4 -B F#4
 
-******************** PARTICULARIDAD DE ESTA VERSIÓN *************************
+./wav_parser_op3.elf -F ../SameSize-1.06MB/D#4v8-2.wav -O Estrellita/F4_ -T F4 -B D#4
 
-Esta versión realiza la interpolación realizando aritmetica de punto floatante de doble precisión (double)
-Los archivos .wav generados con esta aplicación son parecidos a los generados por la versión con aritmética de doble precisión.
+./wav_parser_op3.elf -F ../SameSize-1.06MB/D#4v8-2.wav -O Estrellita/E4_ -T E4 -B D#4
 
-*****************************************************************************
+./wav_parser_op3.elf -F ../SameSize-1.06MB/C4v8-2.wav -O Estrellita/D4_ -T D4 -B C4
 
-Comandos ejemplo:
-
-El archivo C4v8_cool.wav se generado apartir del siguiente comando:
-	
-	./wav_parser_op3.elf -F notasBuenas/C4v8.wav -O notasFlama/ -T C#4 -B C4
-
-El archivo A4v8_cool.wav se generado apartir del siguiente comando:
-
-	./wav_parser_op3.elf -F notasBuenas/A4v8.wav -O notasFlama/ -T B4 -B A4
-
-# argumentos utiles para debugear con gdb:
-
-r -F ../../SalamanderGrandPianoV3_48khz24bit/48khz24bit/C4v8.wav -O oopio -T C#4 -B C4
-
-./wav_parser.elf -F ../48.8Khz24bit_Sorted/C4v8.wav -O iii -T C#4 -B C4
+./wav_parser_op3.elf -F ../SameSize-1.06MB/C4v8-2.wav -O Estrellita/C4_ -T C4 -B C4
 
 
-Notas de estrellita:
+echo "GENERANDO NOTAS EN CARPETA FUR_ELISE"
 
-./wav_parser_op3.elf -F ../SameSize-1.06MB/A4v8-2.wav -O AllNotes/A4_ -T A4 -B A4
-
-./wav_parser_op3.elf -F ../SameSize-1.06MB/F#4v8-2.wav -O AllNotes/G4_ -T G4 -B F#4
-
-./wav_parser_op3.elf -F ../SameSize-1.06MB/D#4v8-2.wav -O AllNotes/F4_ -T F4 -B D#4
-
-./wav_parser_op3.elf -F ../SameSize-1.06MB/D#4v8-2.wav -O AllNotes/E4_ -T E4 -B D#4
-
-./wav_parser_op3.elf -F ../SameSize-1.06MB/C4v8-2.wav -O AllNotes/D4_ -T D4 -B C4
-
-./wav_parser_op3.elf -F ../SameSize-1.06MB/C4v8-2.wav -O AllNotes/C4_ -T C4 -B C4
+./wav_parser_op3.elf -F ../SameSize-1.06MB/A3v8-2.wav -O FUR_ELISE/A3_ -T A3 -B A3
 
 
+./wav_parser_op3.elf -F ../SameSize-1.06MB/D#4v8-2.wav -O FUR_ELISE/D#4_ -T D#4 -B D#4
 
-Todas las notas:
-//La
+./wav_parser_op3.elf -F ../SameSize-1.06MB/D#4v8-2.wav -O FUR_ELISE/E4_ -T E4 -B D#4
+
+
+./wav_parser_op3.elf -F ../SameSize-1.06MB/A3v8-2.wav -O FUR_ELISE/B3_ -T B3 -B A3
+
+
+./wav_parser_op3.elf -F ../SameSize-1.06MB/C4v8-2.wav -O FUR_ELISE/D4_ -T D4 -B C4
+
+./wav_parser_op3.elf -F ../SameSize-1.06MB/C4v8-2.wav -O FUR_ELISE/C4_ -T C4 -B C4
+
+
+echo "GENERANDO NOTAS EN CARPETA AllNotes"
+# Todas las notas:
+# La
 ./wav_parser_op3.elf -F ../SameSize-1.06MB/A0v8-2.wav -O AllNotes/A#0_ -T A#0 -B A0
 
 ./wav_parser_op3.elf -F ../SameSize-1.06MB/A0v8-2.wav -O AllNotes/B0_ -T B0 -B A0
@@ -85,7 +75,7 @@ Todas las notas:
 ./wav_parser_op3.elf -F ../SameSize-1.06MB/A7v8-2.wav -O AllNotes/B7_ -T B7 -B A7
 
 
-//Do
+# Do Sostenido
 ./wav_parser_op3.elf -F ../SameSize-1.06MB/C1v7-2.wav -O AllNotes/C#1_ -T C#1 -B C1
 
 ./wav_parser_op3.elf -F ../SameSize-1.06MB/C1v7-2.wav -O AllNotes/D1_ -T D1 -B C1
@@ -121,7 +111,7 @@ Todas las notas:
 ./wav_parser_op3.elf -F ../SameSize-1.06MB/C7v8-2.wav -O AllNotes/D7_ -T D7 -B C7
 
 
-//Re#
+# Re Sostenido
 
 ./wav_parser_op3.elf -F ../SameSize-1.06MB/D#7v8-2.wav -O AllNotes/E7_ -T E7 -B D#7
 
@@ -158,7 +148,7 @@ Todas las notas:
 ./wav_parser_op3.elf -F ../SameSize-1.06MB/D#1v8-2.wav -O AllNotes/F1_ -T F1 -B D#1
 
 
-//Fa#
+# Fa Sostenido
 
 ./wav_parser_op3.elf -F ../SameSize-1.06MB/F#1v8-2.wav -O AllNotes/G1_ -T G1 -B F#1
 
@@ -180,16 +170,17 @@ Todas las notas:
 ./wav_parser_op3.elf -F ../SameSize-1.06MB/F#4v8-2.wav -O AllNotes/G#4_ -T G#4 -B F#4
 
 
-./wav_parser_op3.elf -F ../SameSize-1.06MB/F#3v8-2.wav -O AllNotes/G3_ -T G3 -B F#3
+./wav_parser_op3.elf -F ../SameSize-1.06MB/F#5v8-2.wav -O AllNotes/G5_ -T G5 -B F#5
 
-./wav_parser_op3.elf -F ../SameSize-1.06MB/F#3v8-2.wav -O AllNotes/G#3_ -T G#3 -B F#3
-
-
-./wav_parser_op3.elf -F ../SameSize-1.06MB/F#2v8-2.wav -O AllNotes/G2_ -T G2 -B F#2
-
-./wav_parser_op3.elf -F ../SameSize-1.06MB/F#2v8-2.wav -O AllNotes/G#2_ -T G#2 -B F#2
+./wav_parser_op3.elf -F ../SameSize-1.06MB/F#5v8-2.wav -O AllNotes/G#5_ -T G#5 -B F#5
 
 
-./wav_parser_op3.elf -F ../SameSize-1.06MB/F#1v8-2.wav -O AllNotes/G1_ -T G1 -B F#1
+./wav_parser_op3.elf -F ../SameSize-1.06MB/F#6v8-2.wav -O AllNotes/G6_ -T G6 -B F#6
 
-./wav_parser_op3.elf -F ../SameSize-1.06MB/F#1v8-2.wav -O AllNotes/G#1_ -T G#1 -B F#1
+./wav_parser_op3.elf -F ../SameSize-1.06MB/F#6v8-2.wav -O AllNotes/G#6_ -T G#6 -B F#6
+
+
+./wav_parser_op3.elf -F ../SameSize-1.06MB/F#7v8-2.wav -O AllNotes/G7_ -T G7 -B F#7
+
+./wav_parser_op3.elf -F ../SameSize-1.06MB/F#7v8-2.wav -O AllNotes/G#7_ -T G#7 -B F#7
+

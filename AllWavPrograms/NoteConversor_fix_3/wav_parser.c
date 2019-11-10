@@ -179,7 +179,7 @@ static bool getFreq(const char *s, int l, double *r){
 	
 	octave = (unsigned char)s[j]-48;
 
-	if ( (octave == 0 && (s[0] != 'A'|| s[0] != 'B')) || (octave == 8 && (s[0] != 'C')) ) {
+	if ( (octave == 0 && (s[0] != 'A'&& s[0] != 'B')) || (octave == 8 && (s[0] != 'C')) ) {
 		printf("-- >> NOT VALID CHARACTER %s. THE LAST NOTES ARE A0,A#0,B0 AND C0 \n",s);		
 		return false;
 	}

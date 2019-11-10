@@ -15,9 +15,7 @@
 //To operate with strings
 #include <string.h>
 
-// To use round() function
-#include <math.h>
-
+//To include bool type
 #include <stdbool.h>
 
 typedef struct {
