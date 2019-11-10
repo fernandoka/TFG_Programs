@@ -284,7 +284,8 @@ static int interpolateSamples(int height, int width, int *samples, int *outSampl
 		}
 
 		if( verbose )
-			printf( "%8i%10i%13.5f%8i%8i%10i%11i\n", j, outSamples[j], ((double)ci)*(1<<QM_ARITH), integerPart, integerPart+1, samples[integerPart], samples[integerPart+1] );
+			printf( "%8i%10i%13.5f%8i%8i%10i%11i\n", j, outSamples[j],((double)ci)/4294967296 , integerPart, integerPart+1, samples[integerPart], samples[integerPart+1] );
+		
 
 		ci += fix_step;
 		integerPart = (int)(ci>>QM_ARITH); // Take the integer part
