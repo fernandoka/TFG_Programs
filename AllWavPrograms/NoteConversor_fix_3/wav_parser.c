@@ -435,6 +435,7 @@ static void writeOutFile(int headerBytesReaded){
  	printf("	Num Null Bytes For Samples: %i\n",file.numBytesForSampleData-numBytesForInterpolatedSample);	
  	printf("	Num Null Samples: %i\n",(file.numBytesForSampleData-numBytesForInterpolatedSample)/(file.numBitsPerSample/8));
 
+ 	free(c);
 }
 
 
