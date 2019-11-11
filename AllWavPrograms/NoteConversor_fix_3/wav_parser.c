@@ -66,7 +66,7 @@ static int rawDataToInt(unsigned char *c, int index, int size);
 // Complex functions
 static int interpolateSamples(int height, int width, int *samples, int *outSamples);
 static unsigned int writeSamples();
-static int truncateCheckOverUnderFlow(long long int n);
+static int roundCheckOverUnderFlow(long long int n);
 
 // Functions to manage errors, the program can finish because the use of these functions (process will end, use of exit()).
 static void manageReadWriteErrors(FILE *localFd);
@@ -226,8 +226,11 @@ static bool getFreq(const char *s, int l, double *r){
 		
 }
 
-static int truncateCheckOverUnderFlow(long long int n){
-	int aux = (int)(n >> (QM_ARITH-QM));
+static int roundCheckOverUnderFlow(long long int n){
+	int aux;
+
+	n += (1<<(QM_ARITH-QM-1)); //Round
+	aux = (int)(n >> (QM_ARITH-QM));
 
 	if (aux > (int)INT24_MAX)
 		aux = (int)INT24_MAX;
@@ -278,7 +281,7 @@ static int interpolateSamples(int height, int width, int *samples, int *outSampl
 
 			// Alineo la coma para operar
 			for (int i = 0; i < height; ++i)
-				outSamples[i*width+j] = truncateCheckOverUnderFlow( ((long long int )samples[i*width+integerPart]<<(QM_ARITH-QM)) + 
+				outSamples[i*width+j] = roundCheckOverUnderFlow( ((long long int )samples[i*width+integerPart]<<(QM_ARITH-QM)) + 
 					(long long int)FMUL(decimalPart,((long long int)(samples[i*width+integerPart+1]-samples[i*width+integerPart])<<(QM_ARITH-QM)),QM_ARITH)  );
 			
 		}
