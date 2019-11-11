@@ -64,7 +64,7 @@ static bool getFreq(const char *s, int l, double *r);
 static int rawDataToInt(unsigned char *c, int index, int size);
 
 // Complex functions
-static int interpolateSamples(int height, int width, int *samples, int *outSamples);
+static unsigned int interpolateSamples(int height, int width, int *samples, int *outSamples);
 static unsigned int writeSamples();
 static int roundCheckOverUnderFlow(long long int n);
 
@@ -229,7 +229,9 @@ static bool getFreq(const char *s, int l, double *r){
 static int roundCheckOverUnderFlow(long long int n){
 	int aux;
 
+	//n += (long long int)1<<(QM_ARITH+1); //2147483648 Round, ese numero quiere decir esto, "1<<(QM_ARITH1)", si lo pongo de otra forma el compilador se queja, 
 	n += (1<<(QM_ARITH-QM-1)); //Round
+	
 	aux = (int)(n >> (QM_ARITH-QM));
 
 	if (aux > (int)INT24_MAX)
@@ -256,12 +258,12 @@ static void manageReadWriteErrors(FILE *localFd){
 // wtout[j] = wtint[j] + getDecimalPart(ci)*(wtint[j+1]-wtint[j])
 // Returns the num of interpolated samples (using the formula and not)
 // The fix arithmetic is done in Q 32.32
-static int interpolateSamples(int height, int width, int *samples, int *outSamples){
+static unsigned int interpolateSamples(int height, int width, int *samples, int *outSamples){
 	long long int fix_step = DOUBLE_TO_FIX(long long int, step, QM_ARITH);
 	long long int ci = 0;
-	int integerPart = 0;
-	long long int decimalPart = 0;
-	int j = 0;
+	unsigned int integerPart = 0;
+	unsigned int decimalPart = 0;
+	unsigned int j = 0;
 
 	if( verbose ){
 		printf( "\nInterpolation (First channel)\n");
@@ -282,7 +284,11 @@ static int interpolateSamples(int height, int width, int *samples, int *outSampl
 			// Alineo la coma para operar
 			for (int i = 0; i < height; ++i)
 				outSamples[i*width+j] = roundCheckOverUnderFlow( ((long long int )samples[i*width+integerPart]<<(QM_ARITH-QM)) + 
-					(long long int)FMUL(decimalPart,((long long int)(samples[i*width+integerPart+1]-samples[i*width+integerPart])<<(QM_ARITH-QM)),QM_ARITH)  );
+					(long long int)FMUL(decimalPart,((long long int)(samples[i*width+integerPart+1]-samples[i*width+integerPart])<<(QM_ARITH-QM)),QM_ARITH) );
+
+
+				/*( ((long long int )samples[i*width+integerPart])<<QM_ARITH ) + 
+					(long long int)(decimalPart*(samples[i*width+integerPart+1]-samples[i*width+integerPart]))  );*/
 			
 		}
 
@@ -291,8 +297,8 @@ static int interpolateSamples(int height, int width, int *samples, int *outSampl
 		
 
 		ci += fix_step;
-		integerPart = (int)(ci>>QM_ARITH); // Take the integer part
-		decimalPart = (long long int)(ci & 0xFFFFFFFF); // Take the decimal part
+		integerPart = (unsigned int)(ci>>QM_ARITH); // Take the integer part
+		decimalPart = (unsigned int)(ci & 0xFFFFFFFF); // Take the decimal part
 		j++;
 
 	}while( integerPart+1 < width ); // Until I can do the interpolation. Width is the number of samples per channel
@@ -302,12 +308,12 @@ static int interpolateSamples(int height, int width, int *samples, int *outSampl
 
 static unsigned int writeSamples(){
 
-	int bytesPerSample = file.numBitsPerSample/8;
+	unsigned int bytesPerSample = file.numBitsPerSample/8;
 	int totalSamplesInFile = file.numBytesForSampleData/bytesPerSample;
 	int height = file.channels; 			//Cuantos canales hay
 	int width = totalSamplesInFile/height;  // Cuantas muestras tiene cada canal
 
-	int numOfInterpolatedSamplesPerChannel;
+	unsigned int numOfInterpolatedSamplesPerChannel;
 	unsigned char *wavData;
 	int *samples, *outSamples;
 	int wavDataIndex;
