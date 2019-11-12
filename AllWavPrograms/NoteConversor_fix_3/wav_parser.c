@@ -229,10 +229,14 @@ static bool getFreq(const char *s, int l, double *r){
 static int roundCheckOverUnderFlow(long long int n){
 	int aux;
 
-	//n += (long long int)1<<(QM_ARITH+1); //2147483648 Round, ese numero quiere decir esto, "1<<(QM_ARITH1)", si lo pongo de otra forma el compilador se queja, 
-	n += (1<<(QM_ARITH-QM-1)); //Round
 	
-	aux = (int)(n >> (QM_ARITH-QM));
+	// Mi version
+	/*n += (1<<(QM_ARITH-QM-1)); //Round
+	aux = (int)(n >> (QM_ARITH-QM)); */
+
+	// Versión intento de mendi
+	n += (long long int)1<<(QM_ARITH-1); //2147483648 Round, ese numero quiere decir esto, "1<<(QM_ARITH1)", si lo pongo de otra forma el compilador se queja, 
+	aux = (int)(n >> (QM_ARITH));
 
 	if (aux > (int)INT24_MAX)
 		aux = (int)INT24_MAX;
@@ -283,12 +287,17 @@ static unsigned int interpolateSamples(int height, int width, int *samples, int 
 
 			// Alineo la coma para operar
 			for (int i = 0; i < height; ++i)
-				outSamples[i*width+j] = roundCheckOverUnderFlow( ((long long int )samples[i*width+integerPart]<<(QM_ARITH-QM)) + 
-					(long long int)FMUL(decimalPart,((long long int)(samples[i*width+integerPart+1]-samples[i*width+integerPart])<<(QM_ARITH-QM)),QM_ARITH) );
+				outSamples[i*width+j] = roundCheckOverUnderFlow( ( ((long long int )samples[i*width+integerPart])<<QM_ARITH ) + 
+					(long long int)(decimalPart*(samples[i*width+integerPart+1]-samples[i*width+integerPart]))  );
 
+				// Mi version
+				/*roundCheckOverUnderFlow( ((long long int )samples[i*width+integerPart]<<(QM_ARITH-QM)) + 
+					(long long int)FMUL(decimalPart,((long long int)(samples[i*width+integerPart+1]-samples[i*width+integerPart])<<(QM_ARITH-QM)),QM_ARITH) );*/
 
-				/*( ((long long int )samples[i*width+integerPart])<<QM_ARITH ) + 
-					(long long int)(decimalPart*(samples[i*width+integerPart+1]-samples[i*width+integerPart]))  );*/
+				// Intento versión de mendi
+				/*roundCheckOverUnderFlow( ( ((long long int )samples[i*width+integerPart])<<QM_ARITH ) + 
+					(long long int)(decimalPart*(samples[i*width+integerPart+1]-samples[i*width+integerPart]))  );
+*/
 			
 		}
 
