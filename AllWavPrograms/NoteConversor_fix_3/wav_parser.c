@@ -229,12 +229,6 @@ static bool getFreq(const char *s, int l, double *r){
 static int roundCheckOverUnderFlow(long long int n){
 	int aux;
 
-	
-	// Mi version
-	/*n += (1<<(QM_ARITH-QM-1)); //Round
-	aux = (int)(n >> (QM_ARITH-QM)); */
-
-	// Versión intento de mendi
 	n += (long long int)1<<(QM_ARITH-1); //2147483648 Round, ese numero quiere decir esto, "1<<(QM_ARITH1)", si lo pongo de otra forma el compilador se queja, 
 	aux = (int)(n >> (QM_ARITH));
 
@@ -285,20 +279,10 @@ static unsigned int interpolateSamples(int height, int width, int *samples, int 
 		}
 		else{
 
-			// Alineo la coma para operar
-			for (int i = 0; i < height; ++i)
+			for (int i = 0; i < height; ++i){
 				outSamples[i*width+j] = roundCheckOverUnderFlow( ( ((long long int )samples[i*width+integerPart])<<QM_ARITH ) + 
-					(long long int)(decimalPart*(samples[i*width+integerPart+1]-samples[i*width+integerPart]))  );
-
-				// Mi version
-				/*roundCheckOverUnderFlow( ((long long int )samples[i*width+integerPart]<<(QM_ARITH-QM)) + 
-					(long long int)FMUL(decimalPart,((long long int)(samples[i*width+integerPart+1]-samples[i*width+integerPart])<<(QM_ARITH-QM)),QM_ARITH) );*/
-
-				// Intento versión de mendi
-				/*roundCheckOverUnderFlow( ( ((long long int )samples[i*width+integerPart])<<QM_ARITH ) + 
-					(long long int)(decimalPart*(samples[i*width+integerPart+1]-samples[i*width+integerPart]))  );
-*/
-			
+					((long long int)decimalPart*(long long int)(samples[i*width+integerPart+1]-samples[i*width+integerPart]))  );
+			}
 		}
 
 		if( verbose )
@@ -319,20 +303,20 @@ static unsigned int writeSamples(){
 
 	unsigned int bytesPerSample = file.numBitsPerSample/8;
 	int totalSamplesInFile = file.numBytesForSampleData/bytesPerSample;
-	int height = file.channels; 			//Cuantos canales hay
-	int width = totalSamplesInFile/height;  // Cuantas muestras tiene cada canal
+	int height = file.channels; 			// How many channels are
+	int width = totalSamplesInFile/height;  // How many samples per channel
 
 	unsigned int numOfInterpolatedSamplesPerChannel;
 	unsigned char *wavData;
 	int *samples, *outSamples;
 	int wavDataIndex;
 
-	// Leo todas las muestras
+	// Read all samples
 	wavData = (unsigned char*) malloc(file.numBytesForSampleData);
 	if( fread( (void *)wavData, 1, file.numBytesForSampleData, fd ) != file.numBytesForSampleData )
 		manageReadWriteErrors(fd);
 
-	// Trato las muestras como si fuera una matriz. Cada fila es un canal.
+	// The sample are seen like if there are stored in a matrix
 	samples = (int*) malloc(sizeof(int)*totalSamplesInFile);	
 	outSamples = (int*) calloc(totalSamplesInFile,sizeof(int));	// Set to zeros
 
