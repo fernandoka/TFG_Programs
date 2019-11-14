@@ -62,6 +62,7 @@ static unsigned char getNextByte();
 static void closeFds();
 static bool getFreq(const char *s, int l, double *r);
 static int rawDataToInt(unsigned char *c, int index, int size);
+static void intToRawData(unsigned char *c, int n, int index, int size);
 
 // Complex functions
 static unsigned int interpolateSamples(int height, int width, int *samples, int *outSamples);
