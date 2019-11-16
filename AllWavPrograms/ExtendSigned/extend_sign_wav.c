@@ -36,7 +36,7 @@ static void closeFds();
 static int rawDataToInt(unsigned char *c, int index, int size);
 
 // Complex functions
-static unsigned int proccessSamples(unsigned char **wavDataOut);
+static unsigned int writeSamples();
 
 // Functions to manage errors, the program can finish because the use of these functions (process will end, use of exit()).
 static void manageReadWriteErrors(FILE *localFd);
@@ -152,7 +152,7 @@ static void manageFseekErrors(){
 }
 
 /* Complex functions */
-static unsigned int proccessSamples(unsigned char **wavDataOut){
+static unsigned int writeSamples(){
 
 	unsigned int bytesPerSample = file.numBitsPerSample/8;
 	int totalSamplesInFile = file.numBytesForSampleData/bytesPerSample;
@@ -160,6 +160,7 @@ static unsigned int proccessSamples(unsigned char **wavDataOut){
 	int width = totalSamplesInFile/height;  // How many samples per channel
 
 	unsigned char *wavData;
+	unsigned char *wavDataOut;
 	int *samples;
 	int wavDataIndex;
 
@@ -185,11 +186,11 @@ static unsigned int proccessSamples(unsigned char **wavDataOut){
 		printf( "--------------------------------------------------------------------\n");
 	}
 
-	*wavDataOut = (unsigned char*) malloc(totalSamplesInFile*(bytesPerSample+1)); // Reserve memory for the extendSign
+	wavDataOut = (unsigned char*) malloc(totalSamplesInFile*(bytesPerSample+1)); // Reserve memory for the extendSign
 	wavDataIndex = 0;
 	for(int j = 0; j < width; j++)
 		for(int i = 0; i < height; i++){
-			intToRawData(*wavDataOut,samples[i*width+j],wavDataIndex,bytesPerSample+1);
+			intToRawData(wavDataOut,samples[i*width+j],wavDataIndex,bytesPerSample+1);
 			wavDataIndex += bytesPerSample+1;
 
 		if( verbose )
@@ -198,9 +199,13 @@ static unsigned int proccessSamples(unsigned char **wavDataOut){
 		}// For
 
 
+	if(fwrite( (void *)wavDataOut, 1,totalSamplesInFile*(bytesPerSample+1),fd_out) != totalSamplesInFile*(bytesPerSample+1)) // Riff
+		manageReadWriteErrors(fd_out);
+	
 	//Free memory
 	free(wavData); // Free the previous memory
 	free(samples);
+	free(wavDataOut);
 
 	return (unsigned int) totalSamplesInFile*(bytesPerSample+1);
 }
@@ -266,7 +271,6 @@ static void writeOutFile(unsigned int headerBytesReaded){
 	//Variables	
 	unsigned char *c = malloc(headerBytesReaded);
 	unsigned int newNumBytesForSample = 0;
-	unsigned char *wavDataOut = NULL;
 	unsigned int TotalBytes_out;
 
 	
@@ -277,14 +281,14 @@ static void writeOutFile(unsigned int headerBytesReaded){
 	if(fwrite(c, sizeof(unsigned char), headerBytesReaded,fd_out) != headerBytesReaded)
 		manageReadWriteErrors(fd_out);
 
-	newNumBytesForSample = proccessSamples(&wavDataOut);
+	newNumBytesForSample = writeSamples();
 	
-	if(fseek(fd_out,headerBytesReaded-3,SEEK_SET) == -1)
+	if(fseek(fd_out,headerBytesReaded-4,SEEK_SET) == -1)
 		manageFseekErrors();
 	
 	if(fwrite(&newNumBytesForSample, sizeof(unsigned char), sizeof(unsigned int),fd_out) != sizeof(unsigned int)) // bytesForSampleData
 		manageReadWriteErrors(fd_out);
-
+	
 	if(fseek(fd_out,4,SEEK_SET) == -1)
 		manageFseekErrors();
 	
@@ -292,21 +296,18 @@ static void writeOutFile(unsigned int headerBytesReaded){
 
 	if(fwrite(&TotalBytes_out, sizeof(unsigned char), sizeof(unsigned int),fd_out) != sizeof(unsigned int)) // totalBytesInFile
 		manageReadWriteErrors(fd_out);
-
-	if(fseek(fd_out,headerBytesReaded+1,SEEK_SET) == -1)
-		manageFseekErrors();
 	
 	
 	// Write samples
-	if(fwrite( (void *)wavDataOut, 1,newNumBytesForSample,fd_out) != newNumBytesForSample) // Riff
-		manageReadWriteErrors(fd_out);
+	/*if(fwrite( (void *)wavDataOut, 1,newNumBytesForSample,fd_out) != newNumBytesForSample) // Riff
+		manageReadWriteErrors(fd_out);*/
 	
 	printf("\nWriting new wav file\n\n");
 	printf(" 	File Out Size: %i\n",TotalBytes_out);
 	printf("	Header Bytes Readed: %i\n",headerBytesReaded);
 	printf("	Total Num Bytes For Samples: %i\n\n",newNumBytesForSample);
 
- 	free(c); free(wavDataOut);
+ 	free(c);
 }
 
 
@@ -420,7 +421,7 @@ static bool setup(int argc, char const *argv[]){
 	printf("Name of out file: %s \n\n",OutfileName);
 
 	//Open the file
-	if ( (fd_out = fopen(OutfileName,"wb+")) == NULL ){
+	if ( (fd_out = fopen(OutfileName,"wb")) == NULL ){
 		printf("-- >> FAIL CREATING THE FILE");
 		return false;
 	}
