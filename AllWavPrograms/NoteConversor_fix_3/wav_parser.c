@@ -71,7 +71,7 @@ static int roundCheckOverUnderFlow(long long int n);
 
 // Functions to manage errors, the program can finish because the use of these functions (process will end, use of exit()).
 static void manageReadWriteErrors(FILE *localFd);
-
+static void manageFseekErrors();
 
 /* Aux functions */
 static bool searchId_3Mark(int *numBytesReaded){
@@ -252,6 +252,13 @@ static void manageReadWriteErrors(FILE *localFd){
 	}
 }
 
+static void manageFseekErrors(){
+	printf("Programs fails while seek the fd, closing\n");
+	perror("-- >>  ERROR");
+	closeFds();
+	exit(1);
+}
+
 /* Complex functions */
 
 // wtout[j] = wtint[j] + getDecimalPart(ci)*(wtint[j+1]-wtint[j])
@@ -311,7 +318,8 @@ static unsigned int writeSamples(){
 	unsigned char *wavData;
 	int *samples, *outSamples;
 	int wavDataIndex;
-
+	unsigned int numBytesForInterpolatedSample;
+	
 	// Read all samples
 	wavData = (unsigned char*) malloc(file.numBytesForSampleData);
 	if( fread( (void *)wavData, 1, file.numBytesForSampleData, fd ) != file.numBytesForSampleData )
@@ -319,7 +327,7 @@ static unsigned int writeSamples(){
 
 	// The sample are seen like if there are stored in a matrix
 	samples = (int*) malloc(sizeof(int)*totalSamplesInFile);	
-	outSamples = (int*) calloc(totalSamplesInFile,sizeof(int));	// Set to zeros
+	outSamples = (int*) malloc(totalSamplesInFile*sizeof(int));
 
 	wavDataIndex = 0;
 	for(int j = 0; j < width; j++)
@@ -339,14 +347,14 @@ static unsigned int writeSamples(){
 			wavDataIndex += bytesPerSample;
 		}
 
-
-	if(fwrite( (void *)wavData, 1,file.numBytesForSampleData,fd_out) != file.numBytesForSampleData) // Riff
+	numBytesForInterpolatedSample = (unsigned int) numOfInterpolatedSamplesPerChannel*bytesPerSample*file.channels;
+	if(fwrite( (void *)wavData, 1,numBytesForInterpolatedSample,fd_out) != numBytesForInterpolatedSample) // Riff
 		manageReadWriteErrors(fd_out);
 
 	//Free memory
 	free(wavData); free(samples); free(outSamples);
 
-	return (unsigned int) numOfInterpolatedSamplesPerChannel*bytesPerSample*file.channels;
+	return numBytesForInterpolatedSample;
 }
 
 /* Functionality functions */
@@ -412,9 +420,10 @@ static void writeOutFile(int headerBytesReaded){
 	//Variables	
 	unsigned char *c = (unsigned char*) malloc (headerBytesReaded);
 	unsigned int numBytesForInterpolatedSample;
-	
+	unsigned int TotalBytes_out;
 
-	//HEADER
+
+	//Coypy HEADER
 	rewind(fd);
 	if(fread(c, sizeof(unsigned char),headerBytesReaded, fd) != headerBytesReaded)
 		manageReadWriteErrors(fd);
@@ -424,19 +433,34 @@ static void writeOutFile(int headerBytesReaded){
 
 	// Write samples
 	numBytesForInterpolatedSample = writeSamples();
+
+	//Update Header
+	if(fseek(fd_out,headerBytesReaded-4,SEEK_SET) == -1)
+		manageFseekErrors();
 	
+	if(fwrite(&numBytesForInterpolatedSample, sizeof(unsigned char), sizeof(unsigned int),fd_out) != sizeof(unsigned int)) // bytesForSampleData
+		manageReadWriteErrors(fd_out);
+	
+	if(fseek(fd_out,4,SEEK_SET) == -1)
+		manageFseekErrors();
+	
+	TotalBytes_out = numBytesForInterpolatedSample+headerBytesReaded;
+
+	if(fwrite(&TotalBytes_out, sizeof(unsigned char), sizeof(unsigned int),fd_out) != sizeof(unsigned int)) // totalBytesInFile
+		manageReadWriteErrors(fd_out);
+
+
 	printf("\nWriting new wav file\n\n");
-	printf(" 	File Out Size: %i\n",file.fileSize);
+	printf(" 	File Out Size: %i\n",TotalBytes_out);
 	printf("	Header Bytes Readed: %i\n",headerBytesReaded);
 	printf("	Total Num Bytes For Samples: %i\n\n",file.numBytesForSampleData);
 
 	printf("	Bytes PerSample: %i\n",file.numBitsPerSample/8);
 	printf("	Num Bytes For Interpolated Samples: %i\n",numBytesForInterpolatedSample);
-	printf("	Total Num Samples: %i\n",file.numBytesForSampleData/(file.numBitsPerSample/8));
 	printf("	Num Interpolated Samples: %i\n\n",numBytesForInterpolatedSample/(file.numBitsPerSample/8));
 
- 	printf("	Num Null Bytes For Samples: %i\n",file.numBytesForSampleData-numBytesForInterpolatedSample);	
- 	printf("	Num Null Samples: %i\n",(file.numBytesForSampleData-numBytesForInterpolatedSample)/(file.numBitsPerSample/8));
+ 	printf("	Num Bytes For Samples Lost: %i\n",file.numBytesForSampleData-numBytesForInterpolatedSample);	
+ 	printf("	Num Samples Lost: %i\n",(file.numBytesForSampleData-numBytesForInterpolatedSample)/(file.numBitsPerSample/8));
 
  	free(c);
 }

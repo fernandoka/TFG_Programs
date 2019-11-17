@@ -1,7 +1,4 @@
 CC=gcc
-#SRC=$(wildcard *.c)
-#OBJS=$(SRC:.c=.o)
-#TARGETS=$(SRC:.c=.elf)
 CFLAGS=-Wall 
 NAME=extend_sign_wav
 
@@ -17,10 +14,12 @@ op3: $(NAME)_op3.elf
 
 gdb: $(NAME)_debug.elf
 
+clean: cl rmWav
+
 #Without optimization
 
 $(NAME).elf: $(NAME).o
-	$(CC) $(CFLAGS) -o $@ $(NAME).o
+	$(CC) $(CFLAGS) -o $@ $(NAME).o 
 
 $(NAME).o:	
 	$(CC) $(CFLAGS) -c -o $@ $(NAME).c
@@ -32,22 +31,22 @@ $(NAME)_op1.elf: $(NAME)_op1.o
 
 $(NAME)_op1.o:	
 	$(CC) $(CFLAGS) -O1 -c -o $@ $(NAME).c
-
+ 
 
 #Optimization 2
 $(NAME)_op2.elf: $(NAME)_op2.o
 	$(CC) $(CFLAGS) -O2 -o $@ $(NAME)_op2.o
 
 $(NAME)_op2.o:	
-	$(CC) $(CFLAGS) -O2 -c -o $@ $(NAME).c
+	$(CC) $(CFLAGS) -O2 -c -o $@ $(NAME).c 
 
 
 #Optimization 3
 $(NAME)_op3.elf: $(NAME)_op3.o
-	$(CC) $(CFLAGS) -O3 -o $@ $(NAME)_op3.o
+	$(CC) $(CFLAGS) -O3 -o $@ $(NAME)_op3.o 
 
 $(NAME)_op3.o:	
-	$(CC) $(CFLAGS) -O3 -c -o $@ $(NAME).c
+	$(CC) $(CFLAGS) -O3 -c -o $@ $(NAME).c 
 
 #To use gdb
 $(NAME)_debug.elf: $(NAME)_debug.o
@@ -56,7 +55,9 @@ $(NAME)_debug.elf: $(NAME)_debug.o
 $(NAME)_debug.o: 	
 	$(CC) $(CFLAGS) -g -c -o $@ $(NAME).c 
 
-clean:
+cl:
 	-rm -f *.o
 	-rm -f *.elf
-
+	
+rmWav:
+	-rm -f *.wav

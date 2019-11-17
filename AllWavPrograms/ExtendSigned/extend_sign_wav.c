@@ -145,7 +145,7 @@ static void manageReadWriteErrors(FILE *localFd){
 
 
 static void manageFseekErrors(){
-	printf("Programs fails while read/writing, closing\n");
+	printf("Programs fails while seek the fd, closing\n");
 	perror("-- >>  ERROR");
 	closeFds();
 	exit(1);
@@ -182,7 +182,7 @@ static unsigned int writeSamples(){
 	if( verbose ){
 		printf( "\nInterpolation (First channel)\n");
 		printf( "--------------------------------------------------------------------\n");
-		printf( "       j    wtoutL 												 \n");
+		printf( "       index    intValue 	HexValue								 \n");
 		printf( "--------------------------------------------------------------------\n");
 	}
 
@@ -194,7 +194,7 @@ static unsigned int writeSamples(){
 			wavDataIndex += bytesPerSample+1;
 
 		if( verbose )
-			printf( "%8i%10i \n", i*width+j,samples[i*width+j]  );
+			printf( "%8i%10i%17x\n", i*width+j,samples[i*width+j], samples[i*width+j] );
 
 		}// For
 
@@ -270,10 +270,11 @@ static bool readHeader(unsigned int *n){
 static void writeOutFile(unsigned int headerBytesReaded){
 	//Variables	
 	unsigned char *c = malloc(headerBytesReaded);
-	unsigned int newNumBytesForSample = 0;
+	unsigned int newNumBytesForSample;
 	unsigned int TotalBytes_out;
 	short unsigned int newNumBitsPerSample = file.numBitsPerSample+8;
 	
+	//Copy Header
 	rewind(fd);
 	if(fread(c, sizeof(unsigned char),headerBytesReaded, fd) != headerBytesReaded)
 		manageReadWriteErrors(fd);
@@ -283,6 +284,7 @@ static void writeOutFile(unsigned int headerBytesReaded){
 
 	newNumBytesForSample = writeSamples();
 	
+	//Update Header
 	if(fseek(fd_out,headerBytesReaded-4,SEEK_SET) == -1)
 		manageFseekErrors();
 	
