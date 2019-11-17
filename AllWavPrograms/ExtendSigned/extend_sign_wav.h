@@ -1,5 +1,5 @@
-#ifndef _COPY_WAV_H
-#define _COPY_WAV_H
+#ifndef _EXTEND_SIGN_H
+#define _EXTEND_SIGN_H
 
 #include <stdio.h>
 #include <stdlib.h>

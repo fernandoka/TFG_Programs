@@ -16,7 +16,7 @@ static const char *id_1Mark = "WAVE";
 static const char *id_2Mark = "fmt ";
 static const char *id_3Mark = "data";
 
-static const char *outpuFileMark = "_extend.bin";
+static const char *outpuFileMark = "_extend.wav";
 /* Prototipes */
 
 // Functions called by main 									 
@@ -272,7 +272,7 @@ static void writeOutFile(unsigned int headerBytesReaded){
 	unsigned char *c = malloc(headerBytesReaded);
 	unsigned int newNumBytesForSample = 0;
 	unsigned int TotalBytes_out;
-
+	short unsigned int newNumBitsPerSample = file.numBitsPerSample+8;
 	
 	rewind(fd);
 	if(fread(c, sizeof(unsigned char),headerBytesReaded, fd) != headerBytesReaded)
@@ -297,15 +297,19 @@ static void writeOutFile(unsigned int headerBytesReaded){
 	if(fwrite(&TotalBytes_out, sizeof(unsigned char), sizeof(unsigned int),fd_out) != sizeof(unsigned int)) // totalBytesInFile
 		manageReadWriteErrors(fd_out);
 	
+
+	if(fseek(fd_out,file.sizeUntilNow + (2*3)+(4*3)	,SEEK_SET) == -1)
+		manageFseekErrors();
 	
-	// Write samples
-	/*if(fwrite( (void *)wavDataOut, 1,newNumBytesForSample,fd_out) != newNumBytesForSample) // Riff
-		manageReadWriteErrors(fd_out);*/
+	if(fwrite(&newNumBitsPerSample, sizeof(unsigned char), sizeof(short unsigned int),fd_out) != sizeof(short unsigned int)) // totalBytesInFile
+		manageReadWriteErrors(fd_out);
+
 	
 	printf("\nWriting new wav file\n\n");
 	printf(" 	File Out Size: %i\n",TotalBytes_out);
 	printf("	Header Bytes Readed: %i\n",headerBytesReaded);
-	printf("	Total Num Bytes For Samples: %i\n\n",newNumBytesForSample);
+	printf("	Total Num Bytes For Samples: %i\n",newNumBytesForSample);
+	printf("	New bits per sample: %i\n\n",newNumBitsPerSample);
 
  	free(c);
 }
