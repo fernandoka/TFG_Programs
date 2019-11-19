@@ -230,7 +230,7 @@ static bool getFreq(const char *s, int l, double *r){
 static int roundCheckOverUnderFlow(long long int n){
 	int aux;
 
-	n += (long long int)1<<(QM_ARITH-1); //2147483648 Round, ese numero quiere decir esto, "1<<(QM_ARITH1)", si lo pongo de otra forma el compilador se queja, 
+	n += (long long int)1<<(QM_ARITH-1); 
 	aux = (int)(n >> (QM_ARITH));
 
 	if (aux > (int)INT24_MAX)
