@@ -32,7 +32,7 @@ static void manageReadWriteErrors(FILE *localFd){
 
 /* Functions called by main */
 static void run_parser(){
-	unsigned char c[BYTES_PER_SAMPLE];
+	unsigned char aux,c[BYTES_PER_SAMPLE];
 	bool goOut = false;
 	int  cont;
 
@@ -47,7 +47,9 @@ static void run_parser(){
 		printf("%i=>X$",cont);
 
 		for (int i = BYTES_PER_SAMPLE-1; i > -1; --i){
-			if (c[i] == 0x00)
+			aux=0;
+			aux = c[i]>>4;
+			if (aux== 0x0)
 				printf("0" );
 			
 			printf("%x",c[i] );
