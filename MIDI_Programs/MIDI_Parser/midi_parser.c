@@ -455,12 +455,14 @@ static bool_t setup(int argc, char const *argv[]){
 	int a;
 	char * fileName;
 	const char *v = "F:v";
+	bool_t ok1 = FALSE;
 
 	while( (a = getopt(argc,(char* *const)argv,v)) > 0){
 	
 		switch( (char)a ){
 			case 'F':
 				fileName = optarg;
+				ok1= TRUE;
 				break;
 			case'v': 
 				printf("Program that parse a midi file and show some commands by stdout.\n");
@@ -471,6 +473,11 @@ static bool_t setup(int argc, char const *argv[]){
 				perror("USAGE: ./exec -F dir Of Midi File\nUSE -v to show some notes");
 				return FALSE;
 		}
+	}
+
+	if(!ok1){
+		printf("-- >> THERE IS NO TARGET, USE -F OPTION\n");
+		return FALSE;
 	}
 
 	//Open the file, fd is a global variable
@@ -492,7 +499,7 @@ int main(int argc, char const *argv[]){
 	if( setup(argc, argv) ) 
 		run_parser();
 	else
-		printf("-- >> SETUP FAILS");
+		printf("-- >> SETUP FAILS\n");
 	
 	return 0;
 }
