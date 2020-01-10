@@ -87,7 +87,7 @@ static bool setup(int argc, char const *argv[]){
 				break;
 
 			case'v': 
-				printf("This program remove the header of a .wav file \n");
+				printf("This program dump the data in a correct format\n");
 				break;
 		
 			default:
