@@ -12,7 +12,7 @@ unsigned int max = 0;
 // Functions called by main 									 
 static bool setup(int argc, char const *argv[]);
 static void run();
-static void toHex(long int aux, unsigned char * c);
+static void toHex(int aux, unsigned char * c);
 static char toHexDigit(int n);
 
 static char toHexDigit(int n){
@@ -87,18 +87,19 @@ static char toHexDigit(int n){
 	return c;
 }
 
-void toHex(long int aux, unsigned char * c){
-	int mod;
-	int i = 0;
+void toHex(int aux, unsigned char * c){
+	int co;
+	int i = NUM_HEX_DIGTS-1;
 
-	while(i < NUM_HEX_DIGTS && (mod=aux%16)!=0 ){
-		printf("-----Mod%i\n", mod);
-		aux = aux/16;
-		c[i++] = toHexDigit(mod);	
+	while( i > -1  && (co=aux/16)!=0 ){
+		c[i--] = toHexDigit(aux%16);
+		aux = co;	
 	}
 
-	while(i != NUM_HEX_DIGTS)
-		c[i++] ='0';
+	c[i--] = toHexDigit(aux%16);
+
+	while(i > -1)
+		c[i--] ='0';
 }
 
 
@@ -106,14 +107,13 @@ void toHex(long int aux, unsigned char * c){
 static void run(){
 	unsigned char c[NUM_HEX_DIGTS];
 	int cont = 0;
-	int n = 1;
-	long int aux;
+	double n = 1;
+	double aux, pow = (double)POW_OF_TWO;
 
 	while(n <= max){
 		printf("%i=>X$",cont++);
-		aux = (long int)( (POW_OF_TWO*(double)(1/n))+0.5f );
-		printf("----Aux%li\n", aux);
-		toHex(aux, c);
+		aux = ((1/n)*pow)+0.5f;
+		toHex((int)aux, c);
 		printf("%s$, ", c);
 		n++;
 	}
