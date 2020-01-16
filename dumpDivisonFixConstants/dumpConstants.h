@@ -9,7 +9,7 @@
 
 #include <stdbool.h>
 
-#define NUM_HEX_DIGTS 7 
+#define NUM_HEX_DIGTS 5 
 #define NUM_COLS 4
 #define POW_OF_TWO 65536 //2**16
 #endif
