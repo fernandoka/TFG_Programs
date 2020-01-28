@@ -7,9 +7,17 @@
 //To use getopt
 #include <unistd.h>
 
+//Biblioteca para ficheros (open)
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include <stdbool.h>
 
-#define NUM_HEX_DIGTS 5 
-#define NUM_COLS 4
-#define POW_OF_TWO 65536 //2**16
+#define QN 4
+#define QM 20
+#define NUM_HEX_DIGTS 8 
+#define NUM_COLS 3
+#define POW_OF_TWO 1048576 //2**20 
+//65536 //2**16
 #endif

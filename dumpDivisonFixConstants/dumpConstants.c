@@ -6,14 +6,29 @@
 
 /*Global Variables*/
 unsigned int max = 0;
+static FILE *fd_out = NULL;
+bool writeFile = false;
 
 /* Prototipes */
 
 // Functions called by main 									 
 static bool setup(int argc, char const *argv[]);
 static void run();
-static void toHex(int aux, unsigned char * c);
+static void toHex(unsigned int aux, unsigned char * c);
 static char toHexDigit(int n);
+
+static void manageReadWriteErrors(FILE *localFd);
+
+
+static void manageReadWriteErrors(FILE *localFd){
+	if(ferror(localFd) != 0 ){
+		printf("Programs fails while read/writing, closing\n");
+		perror("-- >>  ERROR");
+		fclose(fd_out);
+		exit(1);
+	}
+}
+
 
 static char toHexDigit(int n){
 	unsigned char c;
@@ -87,9 +102,14 @@ static char toHexDigit(int n){
 	return c;
 }
 
-void toHex(int aux, unsigned char * c){
+void toHex(unsigned int aux, unsigned char * c){
 	int co;
 	int i = NUM_HEX_DIGTS-1;
+
+	if(writeFile){
+		if( fwrite( &aux, 1,sizeof(unsigned int),fd_out) != sizeof(unsigned int) )
+			manageReadWriteErrors(fd_out);
+	}
 
 	while( i > -1  && (co=aux/16)!=0 ){
 		c[i--] = toHexDigit(aux%16);
@@ -100,6 +120,7 @@ void toHex(int aux, unsigned char * c){
 
 	while(i > -1)
 		c[i--] ='0';
+
 }
 
 
@@ -110,10 +131,12 @@ static void run(){
 	double n = 1;
 	double aux, pow = (double)POW_OF_TWO;
 
+	printf("Fix format: Q%i.%i\n",QN,QM );
+
 	while(n <= max){
 		printf("%i=>X$",cont++);
 		aux = ((1/n)*pow)+0.5f;
-		toHex((int)aux, c);
+		toHex((unsigned int)aux, c);
 		printf("%s$, ", c);
 		n++;
 	}
@@ -124,17 +147,23 @@ static void run(){
 
 static bool setup(int argc, char const *argv[]){
 	int a;
-	const char *v = "N:v";
-	bool ok1;
+	const char *v = "N:O:v";
+	char * dirOutFile = NULL;
+	bool ok1, ok2;
 
-	ok1 = false;
+	ok1 = ok2 = false;
 	
 	while( (a = getopt(argc,(char* *const)argv,v)) > 0){
 	
 		switch( (char)a ){
+			case 'O':
+				dirOutFile = optarg;
+				ok2 = true;
+				break;
+
 			case 'N':
 				max = atoi(optarg);
-				ok1 = true;
+				ok1 = max > 0;
 				break;
 
 			case'v': 
@@ -142,14 +171,24 @@ static bool setup(int argc, char const *argv[]){
 				break;
 		
 			default:
-				perror("USAGE: ./exec -F <dir bin file> \n");
+				perror("USAGE: ./exec -N <number greater than 0> -O < bin fiel with hexadecimel values> \n");
 				return false;
 		}
 	}
 
-	if(!ok1 ){
-		printf("-- >> ERROR\n");
+	if(!ok1){
+		printf("-- >> ERROR, DEFINE A NUMBER GREATER THAN 0\n");
 		return false;
+	}
+
+	if(ok2){
+		//Open the file
+		if ( (fd_out = fopen(dirOutFile,"wb")) == NULL ){
+			printf("-- >> FAIL CREATING THE FILE");
+			return false;
+		}
+
+		writeFile = true;
 	}
 
 	return true;
