@@ -18,6 +18,8 @@
 #define QM 20
 #define NUM_HEX_DIGTS 8 
 #define NUM_COLS 3
-#define POW_OF_TWO 1048576 //2**20 
+#define POW_OF_TWO 32768 //2**15
+//1048576 //2**20 
 //65536 //2**16
+//32768 //2**15
 #endif
