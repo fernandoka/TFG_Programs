@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <Button
+        android:id="@+id/blOnOff"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/bl_on_off" />
+
+    <Button
+        android:id="@+id/showPairedDev"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/blOnOff"
+        android:layout_centerHorizontal="true"
+        android:text="@string/show_paired_devices" />
+
+    <ListView
+        android:id="@+id/listPairedDevs"
+        android:layout_width="409dp"
+        android:layout_height="485dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginLeft="1dp"
+        android:layout_marginTop="246dp"
+        android:layout_marginEnd="1dp"
+        android:layout_marginRight="1dp" />
+
+    <TextView
+        android:id="@+id/status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/showPairedDev"
+        android:text="@string/connection_status"
+        android:layout_centerHorizontal="true"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/pickFile"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/showPairedDev"
+        android:text="@string/select_midi_file" />
+
+    <Button
+        android:id="@+id/sendData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/send_file"
+        android:layout_below="@id/showPairedDev"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:id="@+id/disconnet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/disconnect"
+        android:layout_alignRight="@id/blOnOff"
+        android:layout_alignParentRight="true"/>
+
+    <EditText
+        android:id="@+id/maxAllowedTracks"
+        android:layout_width="69dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/sendData"
+        android:layout_marginTop="51dp"
+        android:ems="10"
+        android:digits="0123456789"
+        android:inputType="number" />
+
+    <TextView
+        android:id="@+id/TitleZero"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/sendData"
+        android:layout_marginTop="30dp"
+        android:text="@string/max_of_allowed_trakcs"
+        android:textStyle="bold"/>
+
+</RelativeLayout>

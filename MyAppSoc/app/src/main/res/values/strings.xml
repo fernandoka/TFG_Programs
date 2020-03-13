@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">MyAppSoc</string>
+    <string name="title_bl_connection">Connection</string>
+    <string name="title_keyboard">Keyboard</string>
+
+    <string name="connection_status">CONNECTION STATUS</string>
+    <string name="select_midi_file">SELECT MIDI FILE</string>
+    <string name="show_paired_devices">SHOW PAIRED DEVICES</string>
+    <string name="send_file">SEND FILE</string>
+    <string name="bl_on_off">BL On/Off</string>
+    <string name="disconnect">DISCONNECT</string>
+    <string name="max_of_allowed_trakcs">MAX OF ALLOWED TRACKS</string>
+    <string name="todo">TODO</string>
+    <string name="decrease_octave">Decrease Octave</string>
+    <string name="increase_octave">Increase Octave</string>
+    <string name="octave_4">Octave 4</string>
+
+</resources>
